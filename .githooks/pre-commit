@@ -1,0 +1,9 @@
+#!/bin/sh
+# gitleaks: no secrets ever enter the history.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact -v || {
+    echo ""
+    echo "gitleaks: staged changes contain potential secrets. Commit refused."
+    exit 1
+  }
+fi
