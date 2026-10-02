@@ -7,12 +7,12 @@ RSpec.describe Augure::KnowledgeBase do
   let(:kb) { described_class.new }
 
   describe "seed corpus" do
-    it "ships 17 exploitation-pattern entries" do
-      expect(described_class.corpus.size).to eq(17)
+    it "ships documented exploitation-pattern entries" do
+      expect(described_class.corpus.size).to eq(22)
     end
 
     it "indexes them on load" do
-      expect(kb.size).to eq(17)
+      expect(kb.size).to eq(22)
     end
   end
 
