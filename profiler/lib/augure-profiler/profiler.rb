@@ -72,6 +72,11 @@ module AugureProfiler
       names.each do |n|
         facts.add("vuln_hint", "unsafe_func:#{n}") if UNSAFE_SYMBOLS.include?(n)
       end
+      # CTF heuristic: a local win/flag function = a callable target
+      # (the ret2func family's target_function fact).
+      if names.any? { |n| n.match?(/\Awin\z|win\z|flag\z/) }
+        facts.add("target_function", "true")
+      end
       if names.include?("__stack_chk_fail")
         facts.add("canary", "true")
       else
