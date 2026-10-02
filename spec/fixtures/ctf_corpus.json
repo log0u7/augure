@@ -1,0 +1,578 @@
+{
+  "meta": {
+    "captured_from": "strategy-sim (Python prototype), fallback engine",
+    "priors": {
+      "shellcode": [
+        10.5,
+        17.5
+      ],
+      "ret2libc": [
+        14.3,
+        25.7
+      ],
+      "rop": [
+        19.5,
+        20.5
+      ],
+      "fmtstr_write": [
+        30.7,
+        19.3
+      ],
+      "ret2plt": [
+        31.7,
+        8.3
+      ],
+      "ret2func": [
+        16,
+        4
+      ],
+      "srop": [
+        20.0,
+        20.0
+      ],
+      "dlresolve": [
+        3,
+        7
+      ],
+      "heap_fastbin": [
+        7.0,
+        13.0
+      ],
+      "heap_tcache": [
+        15.7,
+        14.3
+      ],
+      "heap_overwrite": [
+        19.8,
+        10.2
+      ],
+      "ret2plt_leak": [
+        8,
+        4
+      ]
+    },
+    "mcts_iterations": 3000,
+    "mcts_seed": 42
+  },
+  "suites": {
+    "ropemporium": [
+      {
+        "suite": "ropemporium",
+        "name": "ret2win",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").\ntarget_function(\"true\").",
+        "applicable": [
+          "ret2func"
+        ],
+        "ranked": [
+          [
+            "ret2func",
+            0.8
+          ]
+        ],
+        "selected": "ret2func",
+        "truth": "ret2func"
+      },
+      {
+        "suite": "ropemporium",
+        "name": "split",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"system\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").",
+        "applicable": [
+          "ret2plt",
+          "rop"
+        ],
+        "ranked": [
+          [
+            "ret2plt",
+            0.7925
+          ],
+          [
+            "rop",
+            0.4875
+          ]
+        ],
+        "selected": "ret2plt",
+        "truth": "ret2plt"
+      },
+      {
+        "suite": "ropemporium",
+        "name": "callme",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"callme_one\").\nplt(\"callme_two\").\nplt(\"callme_three\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\nplt(\"exit\").\ngadget(\"pop_rdi_rsi_rdx_ret\", 4198400).\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").",
+        "applicable": [
+          "rop"
+        ],
+        "ranked": [
+          [
+            "rop",
+            0.4875
+          ]
+        ],
+        "selected": "rop",
+        "truth": "rop"
+      },
+      {
+        "suite": "ropemporium",
+        "name": "write4",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"print_file\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\ngadget(\"mov_deref_write\", 4198400).\ngadget(\"pop_r14_r15_ret\", 4198400).\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").",
+        "applicable": [
+          "rop"
+        ],
+        "ranked": [
+          [
+            "rop",
+            0.4875
+          ]
+        ],
+        "selected": "rop",
+        "truth": "rop"
+      },
+      {
+        "suite": "ropemporium",
+        "name": "badchars",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"print_file\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\ngadget(\"mov_deref_write\", 4198400).\ngadget(\"xor_byte\", 4198400).\ngadget(\"pop_r12_r13_r14_r15_ret\", 4198400).\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").",
+        "applicable": [
+          "rop"
+        ],
+        "ranked": [
+          [
+            "rop",
+            0.4875
+          ]
+        ],
+        "selected": "rop",
+        "truth": "rop"
+      },
+      {
+        "suite": "ropemporium",
+        "name": "fluff",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"print_file\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"xlat_obscure\", 4198400).\ngadget(\"bextr_gadget\", 4198400).\ngadget(\"stosb_gadget\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").",
+        "applicable": [
+          "rop"
+        ],
+        "ranked": [
+          [
+            "rop",
+            0.4875
+          ]
+        ],
+        "selected": "rop",
+        "truth": "rop"
+      },
+      {
+        "suite": "ropemporium",
+        "name": "ret2csu",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"ret2win\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\ngadget(\"csu_popper\", 4198400).\ngadget(\"csu_mov\", 4198400).\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").",
+        "applicable": [
+          "rop"
+        ],
+        "ranked": [
+          [
+            "rop",
+            0.4875
+          ]
+        ],
+        "selected": "rop",
+        "truth": "rop"
+      },
+      {
+        "suite": "ropemporium",
+        "name": "pivot",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"foothold_function\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\nplt(\"exit\").\ngadget(\"pop_rax_ret\", 4198400).\ngadget(\"xchg_rsp_rax\", 4198400).\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"mov_rax_deref\", 4198400).\ngadget(\"add_rax\", 4198400).\ngadget(\"call_rax\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").",
+        "applicable": [
+          "rop"
+        ],
+        "ranked": [
+          [
+            "rop",
+            0.4875
+          ]
+        ],
+        "selected": "rop",
+        "truth": "rop"
+      }
+    ],
+    "protostar": [
+      {
+        "suite": "protostar",
+        "name": "stack4",
+        "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\nplt(\"printf\").\nplt(\"gets\").\nvuln_hint(\"unsafe_func:gets\").\ntarget_function(\"true\").",
+        "applicable": [
+          "shellcode",
+          "ret2func"
+        ],
+        "ranked": [
+          [
+            "ret2func",
+            0.8
+          ],
+          [
+            "shellcode",
+            0.375
+          ]
+        ],
+        "selected": "ret2func",
+        "truth": "ret2func"
+      },
+      {
+        "suite": "protostar",
+        "name": "stack5",
+        "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\nplt(\"gets\").\nvuln_hint(\"unsafe_func:gets\").",
+        "applicable": [
+          "shellcode"
+        ],
+        "ranked": [
+          [
+            "shellcode",
+            0.375
+          ]
+        ],
+        "selected": "shellcode",
+        "truth": "shellcode"
+      },
+      {
+        "suite": "protostar",
+        "name": "stack6",
+        "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\nplt(\"gets\").\nplt(\"puts\").\nplt(\"strdup\").\ngadget(\"ret_align\", 134513664).\nvuln_hint(\"unsafe_func:gets\").\nlibc_present(\"true\").\nreturn_addr_filtered(\"true\").",
+        "applicable": [
+          "ret2libc"
+        ],
+        "ranked": [
+          [
+            "ret2libc",
+            0.3575
+          ]
+        ],
+        "selected": "ret2libc",
+        "truth": "ret2libc"
+      },
+      {
+        "suite": "protostar",
+        "name": "stack7",
+        "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\nplt(\"gets\").\nplt(\"puts\").\nplt(\"strdup\").\nplt(\"printf\").\ngadget(\"ret_align\", 134513664).\ngadget(\"pop_ret\", 134513664).\nvuln_hint(\"unsafe_func:gets\").\nlibc_present(\"true\").\nreturn_addr_filtered(\"true\").",
+        "applicable": [
+          "ret2libc"
+        ],
+        "ranked": [
+          [
+            "ret2libc",
+            0.3575
+          ]
+        ],
+        "selected": "ret2libc",
+        "truth": "ret2libc"
+      },
+      {
+        "suite": "protostar",
+        "name": "format0",
+        "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\nplt(\"printf\").\nplt(\"sprintf\").\nvuln_hint(\"unsafe_func:printf\").",
+        "applicable": [
+          "fmtstr_write"
+        ],
+        "ranked": [
+          [
+            "fmtstr_write",
+            0.614
+          ]
+        ],
+        "selected": "fmtstr_write",
+        "truth": "fmtstr_write"
+      },
+      {
+        "suite": "protostar",
+        "name": "format4",
+        "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\nplt(\"printf\").\nplt(\"fgets\").\nplt(\"exit\").\nplt(\"puts\").\nvuln_hint(\"unsafe_func:printf\").\ngot_overwrite_target(\"true\").",
+        "applicable": [
+          "fmtstr_write"
+        ],
+        "ranked": [
+          [
+            "fmtstr_write",
+            0.614
+          ]
+        ],
+        "selected": "fmtstr_write",
+        "truth": "fmtstr_write"
+      },
+      {
+        "suite": "protostar",
+        "name": "heap0",
+        "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\nplt(\"malloc\").\nplt(\"strcpy\").\nplt(\"printf\").\nvuln(\"heap\").\nfunction_pointer_on_heap(\"true\").\nallocator(\"dlmalloc\").",
+        "applicable": [
+          "heap_overwrite"
+        ],
+        "ranked": [
+          [
+            "heap_overwrite",
+            0.66
+          ]
+        ],
+        "selected": "heap_overwrite",
+        "truth": "heap_overwrite"
+      },
+      {
+        "suite": "protostar",
+        "name": "heap1",
+        "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\nplt(\"malloc\").\nplt(\"strcpy\").\nplt(\"puts\").\nvuln(\"heap\").\ngot_overwrite_target(\"true\").\nallocator(\"dlmalloc\").",
+        "applicable": [
+          "heap_overwrite"
+        ],
+        "ranked": [
+          [
+            "heap_overwrite",
+            0.66
+          ]
+        ],
+        "selected": "heap_overwrite",
+        "truth": "heap_overwrite"
+      }
+    ],
+    "pwnable": [
+      {
+        "suite": "pwnable",
+        "name": "unlink",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"malloc\").\nplt(\"memcpy\").\nplt(\"printf\").\nvuln(\"heap\").\nallocator(\"dlmalloc\").\ngot_overwrite_target(\"true\").",
+        "applicable": [
+          "heap_overwrite"
+        ],
+        "ranked": [
+          [
+            "heap_overwrite",
+            0.66
+          ]
+        ],
+        "selected": "heap_overwrite",
+        "truth": "heap_overwrite"
+      },
+      {
+        "suite": "pwnable",
+        "name": "tcache_tear",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"true\").\nrelro(\"full\").\nplt(\"malloc\").\nplt(\"free\").\nplt(\"printf\").\nplt(\"read\").\nvuln(\"heap\").\nlibc_present(\"true\").\nallocator(\"tcache\").\nglibc_minor(26).",
+        "applicable": [
+          "heap_tcache"
+        ],
+        "ranked": [
+          [
+            "heap_tcache",
+            0.5233333333
+          ]
+        ],
+        "selected": "heap_tcache",
+        "truth": "heap_tcache"
+      },
+      {
+        "suite": "pwnable",
+        "name": "realloc",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"true\").\nrelro(\"full\").\nplt(\"realloc\").\nplt(\"printf\").\nplt(\"atoll\").\nplt(\"read\").\nvuln(\"heap\").\nlibc_present(\"true\").\nallocator(\"tcache\").\ngot_overwrite_target(\"true\").\nglibc_minor(28).",
+        "applicable": [
+          "heap_tcache"
+        ],
+        "ranked": [
+          [
+            "heap_tcache",
+            0.5233333333
+          ]
+        ],
+        "selected": "heap_tcache",
+        "truth": "heap_tcache"
+      },
+      {
+        "suite": "pwnable",
+        "name": "calc",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"true\").\nrelro(\"partial\").\nplt(\"printf\").\nplt(\"read\").\nplt(\"exit\").\nplt(\"signal\").\ngadget(\"pop_edx_ret\", 134513664).\ngadget(\"pop_eax_ret\", 134513664).\ngadget(\"int80\", 134513664).\ngadget(\"ret_align\", 134513664).\nvuln_hint(\"unsafe_func:gets\").\nlibc_present(\"true\").",
+        "applicable": [
+          "ret2libc",
+          "rop"
+        ],
+        "ranked": [
+          [
+            "rop",
+            0.4875
+          ],
+          [
+            "ret2libc",
+            0.3575
+          ]
+        ],
+        "selected": "rop",
+        "truth": "rop"
+      },
+      {
+        "suite": "pwnable",
+        "name": "orw",
+        "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"read\").\nplt(\"printf\").\nvuln_hint(\"unsafe_func:gets\").\nseccomp(\"true\").\nshellcode_input(\"true\").",
+        "applicable": [
+          "shellcode"
+        ],
+        "ranked": [
+          [
+            "shellcode",
+            0.375
+          ]
+        ],
+        "selected": "shellcode",
+        "truth": "shellcode"
+      },
+      {
+        "suite": "pwnable",
+        "name": "old_dayz",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"malloc\").\nplt(\"free\").\nplt(\"printf\").\nplt(\"read\").\nvuln(\"heap\").\nlibc_present(\"true\").\nallocator(\"ptmalloc2\").\nglibc_minor(23).",
+        "applicable": [
+          "heap_fastbin"
+        ],
+        "ranked": [
+          [
+            "heap_fastbin",
+            0.35
+          ]
+        ],
+        "selected": "heap_fastbin",
+        "truth": "heap_fastbin"
+      },
+      {
+        "suite": "pwnable",
+        "name": "smallest",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\ngadget(\"syscall\", 134513664).\nvuln_hint(\"unsafe_func:gets\").\nsigreturn_frame(\"true\").",
+        "applicable": [
+          "srop"
+        ],
+        "ranked": [
+          [
+            "srop",
+            0.5
+          ]
+        ],
+        "selected": "srop",
+        "truth": "srop"
+      },
+      {
+        "suite": "pwnable",
+        "name": "sick_rop",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\ngadget(\"syscall\", 134513664).\nvuln_hint(\"unsafe_func:gets\").\nsigreturn_frame(\"true\").",
+        "applicable": [
+          "srop"
+        ],
+        "ranked": [
+          [
+            "srop",
+            0.5
+          ]
+        ],
+        "selected": "srop",
+        "truth": "srop"
+      }
+    ]
+  },
+  "mcts": [
+    {
+      "name": "nx_pie_fmtstr_libc",
+      "allowed": [
+        "fmtstr_leak",
+        "ret2libc",
+        "rop",
+        "rop_nocontext"
+      ],
+      "documented_first": "fmtstr_leak",
+      "documented_chain": [
+        "fmtstr_leak",
+        "ret2libc"
+      ],
+      "python_first": "fmtstr_leak",
+      "python_path": [
+        "fmtstr_leak",
+        "ret2libc"
+      ],
+      "source": "generic CTF (fmtstr -> ret2libc), e.g. protostar-style",
+      "external": false
+    },
+    {
+      "name": "nx_off_winfunc",
+      "allowed": [
+        "ret2plt",
+        "shellcode"
+      ],
+      "documented_first": "shellcode",
+      "documented_chain": [
+        "shellcode"
+      ],
+      "python_first": "shellcode",
+      "python_path": [
+        "shellcode"
+      ],
+      "source": "protostar stack5 (NX off, shellcode)",
+      "external": false
+    },
+    {
+      "name": "nx_pie_ret2plt_leak",
+      "allowed": [
+        "ret2libc",
+        "ret2plt_leak",
+        "rop",
+        "rop_nocontext"
+      ],
+      "documented_first": "ret2plt_leak",
+      "documented_chain": [
+        "ret2plt_leak",
+        "ret2libc"
+      ],
+      "python_first": "ret2plt_leak",
+      "python_path": [
+        "ret2plt_leak",
+        "ret2libc"
+      ],
+      "source": "phoenix stack7-style (puts leak -> ret2libc)",
+      "external": false
+    },
+    {
+      "name": "pivot_then_chain",
+      "allowed": [
+        "ret2libc_big",
+        "ret2plt_leak_big",
+        "stack_pivot"
+      ],
+      "documented_first": "stack_pivot",
+      "documented_chain": [
+        "stack_pivot",
+        "ret2plt_leak_big",
+        "ret2libc_big"
+      ],
+      "python_first": "stack_pivot",
+      "python_path": [
+        "stack_pivot",
+        "ret2plt_leak_big",
+        "ret2libc_big"
+      ],
+      "source": "ROP Emporium pivot (stack pivot -> chain)",
+      "external": false
+    },
+    {
+      "name": "pintheft_kernel",
+      "allowed": [
+        "io_uring_register",
+        "io_uring_write",
+        "page_free",
+        "pagecache_reclaim",
+        "rds_pin_steal",
+        "suid_exec"
+      ],
+      "documented_first": "io_uring_register",
+      "documented_chain": [
+        "io_uring_register",
+        "rds_pin_steal",
+        "page_free",
+        "pagecache_reclaim",
+        "io_uring_write",
+        "suid_exec"
+      ],
+      "python_first": "io_uring_register",
+      "python_path": [
+        "io_uring_register",
+        "rds_pin_steal",
+        "page_free",
+        "pagecache_reclaim",
+        "io_uring_write",
+        "suid_exec"
+      ],
+      "source": "PinTheft, V12 Security (RDS zerocopy double-free privesc)",
+      "external": true
+    }
+  ]
+}
