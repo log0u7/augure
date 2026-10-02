@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# One-command contributor setup: deps + toolchain check + first green run.
+system("bundle install") or abort("augure: bundle install failed")
+unless system("ruby -e 'exit RUBY_VERSION.to_f >= 3.4'")
+  abort("augure: ruby >= 3.4 required (mise install ruby@3.4)")
+end
+system("bundle exec rspec") or abort("augure: the suite must be green after setup")
+puts
+puts "augure is ready:"
+puts "  bundle exec ruby exe/augure analyze examples/ret2win.facts"
+puts "  bundle exec ruby exe/augure-benchmark spec/fixtures/ctf_corpus.json"

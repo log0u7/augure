@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "augure"
+
+# Pre-load one corpus target so the API is explorable in 5 seconds.
+facts = Augure::Facts.parse(File.read(File.join(__dir__, "../examples/ret2win.facts")))
+result = Augure::Pipeline.analyze(facts: facts)
+
+puts "augure #{Augure::VERSION} - auditable exploitation decision layer"
+puts "  facts   -> Augure::Facts (ret2win loaded, #{facts.size} facts)"
+puts "  result  -> the ret2win decision (selected: #{result[:selected]})"
+puts "  try:    Augure::Pipeline.analyze(facts: facts.to_s, seed: 42)"
+puts "  try:    Augure::Rules.all.map(&:id)"
+puts
+binding.irb

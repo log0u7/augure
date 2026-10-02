@@ -1,0 +1,11 @@
+nx("true").
+pie("false").
+canary("false").
+relro("partial").
+plt("puts").
+plt("memset").
+plt("read").
+plt("printf").
+gadget("ret_align", 4198400).
+vuln_hint("unsafe_func:gets").
+target_function("true").

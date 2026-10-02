@@ -1,0 +1,12 @@
+nx("true").
+pie("false").
+canary("false").
+relro("partial").
+plt("system").
+plt("puts").
+plt("memset").
+plt("read").
+plt("printf").
+gadget("pop_rdi_ret", 4198400).
+gadget("ret_align", 4198400).
+vuln_hint("unsafe_func:gets").

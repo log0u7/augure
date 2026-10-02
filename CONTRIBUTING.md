@@ -7,9 +7,8 @@ reproducible, explainable and honestly benchmarked.
 ## Setup
 
 ```sh
-mise install ruby          # Ruby 3.4+ (see .ruby-version)
-bundle install
-bin/setup 2>/dev/null || bundle exec rspec   # first run: everything green
+bin/setup                  # deps + toolchain check + first green run
+bin/console                # IRB with the API pre-loaded (ret2win facts)
 ```
 
 ## The rules
