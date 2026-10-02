@@ -23,6 +23,17 @@ jobs:
       - name: Tests
         run: bundle exec rspec
 
+  concordance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: CTF corpus concordance (34 targets, gate 100%)
+        run: bundle exec exe/augure-benchmark spec/fixtures/ctf_corpus.json
+
   audit:
     runs-on: ubuntu-latest
     steps:

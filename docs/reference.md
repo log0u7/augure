@@ -9,6 +9,30 @@ Blank lines and `// comments` ignored. Rules (`:-`) rejected. Unknown
 predicate, wrong arity or wrong argument type raises an explicit error with
 the line number.
 
+### A complete example
+
+This is the shape of a `target.facts` file (see the
+[tutorial](tutorial.md) for the full walkthrough):
+
+```
+// the target
+nx("true").
+pie("false").
+canary("false").
+relro("partial").
+
+// what it imports
+plt("system").
+plt("puts").
+
+// what gadgets exist inside it
+gadget("pop_rdi_ret", 4198400).
+gadget("ret_align", 4198404).
+
+// what the profiler noticed
+vuln_hint("unsafe_func:gets").
+```
+
 ### Schema
 
 | Predicate | Arity | Arg types | Meaning |
@@ -31,6 +55,10 @@ the line number.
 | `seccomp` | 1 | string | seccomp filter context |
 | `shellcode_input` | 1 | string | input reachable and executable |
 | `sigreturn_frame` | 1 | string | sigreturn frame constructible |
+| `fmtstr_read` | 1 | string | format string has a read primitive |
+| `reloc_writable` | 1 | string | relocations writable (ret2dlresolve) |
+| `dt_lazy` | 1 | string | lazy binding in effect |
+| `limited_stack` | 1 | string | stack space constrains the chain |
 
 Defaults (closed world): absent `nx` = `"true"`, absent `pie` = `"true"`,
 absent `canary` = `"false"`.
@@ -48,6 +76,14 @@ absent `canary` = `"false"`.
 | `app_srop` | `srop` | sof, sigreturn frame, syscall gadget |
 | `app_ret2plt_leak` | `ret2plt_leak` | sof, NX on, PIE on, `puts`, reg control |
 | `app_fmtstr_write` | `fmtstr_write` | format-string vuln (NX-independent) |
+| `app_fmtstr_leak_read` | `fmtstr_leak` | fmtstr + read primitive |
+| `app_fmtstr_leak_pie` | `fmtstr_leak` | fmtstr + PIE on |
+| `app_fmtstr_leak_canary` | `fmtstr_leak` | fmtstr + canary on |
+| `app_ret2dlresolve` | `ret2dlresolve` | sof, NX on, PIE off, lazy binding, writable reloc |
+| `app_ret2csu` | `ret2csu` | sof, NX on, csu gadget family |
+| `app_stack_pivot` | `stack_pivot` | sof, NX on, limited stack, pivot gadget |
+| `app_got_overwrite_sof` | `got_overwrite` | sof, NX on, GOT target, not full RELRO |
+| `app_got_overwrite_fmtstr` | `got_overwrite` | fmtstr, GOT target, not full RELRO |
 | `app_heap_tcache_alloc` | `heap_tcache` | heap, allocator tcache |
 | `app_heap_tcache_glibc` | `heap_tcache` | heap, glibc 2.26..2.33 |
 | `app_heap_fastbin_glibc` | `heap_fastbin` | heap, glibc < 2.26 |
@@ -55,8 +91,9 @@ absent `canary` = `"false"`.
 | `app_heap_overwrite_dlmalloc` | `heap_overwrite` | heap, dlmalloc |
 | `app_heap_overwrite_fp` | `heap_overwrite` | heap, function pointer on heap |
 
-Derived relations: `vuln` (from hints), `has_reg_control`, 
-`has_write_primitive`, `has_syscall_gadget`, `enough_gadgets`.
+Derived relations: `vuln` (from hints), `has_reg_control`,
+`has_write_primitive`, `has_syscall_gadget`, `has_csu_gadget`,
+`has_pivot_gadget`, `enough_gadgets`.
 
 ## CLI
 
@@ -136,6 +173,9 @@ stderr names the line).
 | `stack_pivot` | - | pivot | no | 0.60 |
 | `ret2plt_leak_big` | pivot | libc_base | no | 0.68 |
 | `ret2libc_big` | pivot+libc_base | shell | yes | 0.85 |
+| `ret2csu` | - | libc_base | no | 0.70 |
+| `dlresolve` | - | shell | yes | 0.55 |
+| `got_overwrite` | - | shell | yes | 0.65 |
 | `io_uring_register` | - | iouring | no | 0.90 |
 | `rds_pin_steal` | iouring | pin_underflow | no | 0.70 |
 | `page_free` | pin_underflow | freed_page | no | 0.75 |

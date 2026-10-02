@@ -16,6 +16,12 @@ You should see the usage banner. **Check:** `Usage: augure analyze`.
 
 ## 2. Write a fact file
 
+> **Where do facts come from?** Normally from the profiler, not from your
+> keyboard: a metasm-based `augure profile app.elf -o target.facts` will
+> generate exactly this file from a binary (checksec, imports, unsafe
+> symbols, gadgets). Until that lands, hand-writing facts is the dev loop -
+> and it teaches you the format the profiler must speak.
+
 Facts are one target's properties, one per line. Create `target.facts`:
 
 ```
@@ -94,6 +100,6 @@ exactly which rule moved it.
 
 ## Next steps
 
-- `docs/how-to-write-rules.md` - add your own technique rules
-- `docs/reference.md` - the full fact schema and API
-- `docs/auditability.md` - what the proof trail buys each team
+- [Write your own technique rules](how-to-write-rules.md)
+- [The full reference](reference.md) - fact schema and API
+- [What the proof trail buys each team](auditability.md)

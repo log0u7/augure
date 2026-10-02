@@ -7,7 +7,7 @@ selection from Datalog facts; never executes anything.
 
 ## Commands
 
-- Test: `bundle exec rspec` (all green required, 79+ examples)
+- Test: `bundle exec rspec` (all green required, 85+ examples)
 - Lint: `bundle exec standardrb` (zero offenses required, `--fix` available)
 - Audit: `bundle exec bundler-audit`
 - CLI: `bundle exec ruby exe/augure analyze spec/fixtures/... --json`

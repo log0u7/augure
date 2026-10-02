@@ -87,10 +87,19 @@ Red and blue arguing about "likely attack paths" argue from different
 imaginations. Both teams arguing about a *rule table* argue from the same
 object:
 
+```mermaid
+graph LR
+    RB["blue adds a control"] --> C["fact set changes<br/>(NX on, RELRO full...)"]
+    C --> R["corpus re-run:<br/>rules stop firing"]
+    R --> P["planner predicts<br/>the next move"]
+    P --> D["blue validates<br/>detection for THAT move"]
+    D --> RB
+```
+
 - **One vocabulary.** A technique rule is written once; red side proves it
   fires, blue side proves it hurts, purple side keeps both proofs in one
   repo.
-- **The corpus is double-sided.** The 24 frozen CTF targets are offensive
+- **The corpus is double-sided.** The 34 frozen CTF targets are offensive
   regression tests *and* detection validation targets: when blue adds a
   control, re-run the corpus, and the rules that fell are the measured
   progress.

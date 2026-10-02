@@ -48,6 +48,18 @@ the corpus spec. Defaults are closed-world (`nx` absent means `nx("true")`)
 
 ## Uncertainty, in three layers
 
+```mermaid
+graph TD
+    AG["Genetic algorithm<br/>offline, synthetic targets"] -- "finds weight inversions" --> P["prior table<br/>(ret2plt 15,5 vs the human ROP anchor)"]
+    P --> B["Bandit: Thompson sampling<br/>online, flat, auditable (seeded)"]
+    B -- "blind spot: choices look independent" --> M["MCTS over STAGE_MODEL<br/>a leak is worth what it unlocks"]
+    M --> D["plan: fmtstr_leak -> ret2libc"]
+```
+
+A flat bandit ranks `ret2libc` above a leak; MCTS plans the leak first
+because the transition table says what it unlocks. The planner's lesson,
+as a diagram.
+
 1. **Genetic algorithm (offline).** Evolved weight vectors over synthetic
    targets; found the inversions humans miss. Research tool, stays in
    Python - it is the narrative, not the SDK.

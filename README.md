@@ -87,25 +87,41 @@ result[:explain]           # => { provenance: { "ret2plt" => [{ rule:, evidence:
 
 | Layer | Module | What it does |
 |---|---|---|
-| Facts | `Augure::Facts` | Strict, schema-checked fact parser. Malformed input fails loudly, never silently. |
-| Rules | `Augure::Rules` | Rules-as-data: the single source of truth for applicability. |
-| Engine | `Augure::Engine` | Forward-chaining evaluation with per-decision provenance. |
-| Verifier | `Augure::Verifier` | Arithmetic fast path + SMT-LIB emission. |
-| Solvers | `Augure::SmtProcess` | Subprocess boundary to z3 / bitwuzla / cvc5. Timeout = `:unknown`, never a crash. |
-| Knowledge | `Augure::KnowledgeBase` | 17 documented exploitation patterns; TF-IDF retrieval; Beta prior calibration. |
-| Bandit | `Augure::Bandit` | Thompson sampling over Beta posteriors, seeded and auditable. |
-| Planner | `Augure::Mcts` | Multi-step planning: a leak is worth what it unlocks. |
-| CLI | `exe/augure` | Facts in, decision out, JSON if you want it. |
+| Facts | [`Augure::Facts`](docs/reference.md#fact-format) | Strict, schema-checked fact parser. Malformed input fails loudly, never silently. |
+| Rules | [`Augure::Rules`](docs/how-to-write-rules.md) | Rules-as-data: the single source of truth for applicability. |
+| Engine | [`Augure::Engine`](docs/reference.md#augureengine) | Forward-chaining evaluation with per-decision provenance. |
+| Verifier | [`Augure::Verifier`](docs/reference.md#augureverifier) | Arithmetic fast path + SMT-LIB emission. |
+| Solvers | [`Augure::SmtProcess`](docs/how-to-swap-solver.md) | Subprocess boundary to z3 / bitwuzla / cvc5. Timeout = `:unknown`, never a crash. |
+| Knowledge | [`Augure::KnowledgeBase`](docs/reference.md#augureknowledgebase) | 22 documented exploitation patterns; TF-IDF retrieval; Beta prior calibration. |
+| Bandit | [`Augure::Bandit`](docs/reference.md#augurebandit) | Thompson sampling over Beta posteriors, seeded and auditable. |
+| Planner | [`Augure::Mcts`](docs/reference.md#auguremcts) | Multi-step planning: a leak is worth what it unlocks. |
+| CLI | [`exe/augure`](docs/tutorial.md) | Facts in, decision out, JSON if you want it. |
 
 **Zero runtime dependencies.** Every external capability (Soufflé, SMT
 solvers, LLM providers) enters through a subprocess or HTTP boundary.
 
+## How the decision flows
+
+```mermaid
+graph LR
+    B["binary<br/>(Phase 3 profiler)"] --> F["Augure::Facts<br/>strict schema"]
+    F --> E["Augure::Engine<br/>Datalog rules-as-data"]
+    E --> V["Augure::Verifier<br/>arithmetic / SMT-LIB"]
+    V --> B1["Augure::Bandit<br/>Beta posteriors"]
+    B1 --> M["Augure::Mcts<br/>multi-step plan"]
+    M --> D["decision + explain<br/>rule ID + evidence + seed"]
+    E -- provenance --> D
+    KB["KnowledgeBase<br/>22 documented patterns"] -. priors .-> B1
+    SOLV["z3 / bitwuzla / cvc5<br/>(subprocess)"] -. SMT-LIB text .-> V
+```
+
 ## Honest numbers
 
 Augure's decision engine reproduces the frozen CTF benchmark corpus
-byte-for-byte - 24/24 technique classifications across ROP Emporium,
-Protostar and pwnable-style targets, and 5/5 multi-step plans including an
-externally documented kernel chain.
+byte-for-byte - **34/34** technique classifications across ROP Emporium,
+Protostar, Phoenix and pwnable-style targets (14 distinct techniques),
+and 5/5 multi-step plans including an externally documented kernel chain.
+CI runs [`augure-benchmark`](docs/reference.md#cli) as a hard gate.
 
 Read that carefully: these are **predictions against frozen ground truth**,
 not field results. The success probabilities in the prior table are
@@ -165,7 +181,7 @@ conviction the original articles already held: **one of these systems is a
 clock, the other is a cat. Augure is the clock.**
 
 The full story - why facts/rules separation outlived every language
-migration - is in `docs/explanation/architecture.md`.
+migration - is in [the architecture explanation](docs/explanation-architecture.md).
 
 ## License
 
@@ -176,9 +192,9 @@ used as an external library in the readline style.
 
 | I want to... | Read |
 |---|---|
-| get my first decision in 10 minutes | `docs/tutorial.md` |
-| write my own technique rules | `docs/how-to-write-rules.md` |
-| plug a real SMT solver | `docs/how-to-swap-solver.md` |
-| look up the fact format or API | `docs/reference.md` |
-| understand auditability (red/blue/purple) | `docs/auditability.md` |
-| understand why rules-as-data | `docs/explanation-architecture.md` |
+| get my first decision in 10 minutes | [the tutorial](docs/tutorial.md) |
+| write my own technique rules | [rule-writing how-to](docs/how-to-write-rules.md) |
+| plug a real SMT solver | [solver how-to](docs/how-to-swap-solver.md) |
+| look up the fact format or API | [the reference](docs/reference.md) |
+| understand auditability (red/blue/purple) | [auditability](docs/auditability.md) |
+| understand why rules-as-data | [architecture](docs/explanation-architecture.md) |
