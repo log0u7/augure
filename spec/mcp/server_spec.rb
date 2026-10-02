@@ -63,7 +63,7 @@ RSpec.describe AugureMcp::Server do
   def json_lines(out)
     out.lines.map(&:chomp).compact.filter_map do |line|
       JSON.parse(line)
-    rescue StandardError
+    rescue
       nil
     end
   end
