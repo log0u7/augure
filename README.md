@@ -46,6 +46,13 @@ That is the product. Not autonomy. **Accountability.**
 gem install augure
 ```
 
+Profile a real binary into facts, then decide on them:
+
+```sh
+augure-profile app.elf -o target.facts   # gem augure-profiler (metasm)
+augure analyze target.facts
+```
+
 ```sh
 $ augure analyze target.facts
 applicable: ret2plt, rop

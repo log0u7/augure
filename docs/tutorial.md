@@ -16,11 +16,11 @@ You should see the usage banner. **Check:** `Usage: augure analyze`.
 
 ## 2. Write a fact file
 
-> **Where do facts come from?** Normally from the profiler, not from your
-> keyboard: a metasm-based `augure profile app.elf -o target.facts` will
-> generate exactly this file from a binary (checksec, imports, unsafe
-> symbols, gadgets). Until that lands, hand-writing facts is the dev loop -
-> and it teaches you the format the profiler must speak.
+> **Where do facts come from?** From the profiler, not your keyboard:
+> `augure-profile app.elf -o target.facts` generates exactly this file from
+> a binary (checksec, imports, unsafe symbols, gadgets) via metasm - gem
+> `augure-profiler`. Hand-writing facts is still useful to learn the
+> format the profiler speaks.
 
 Facts are one target's properties, one per line. Create `target.facts`:
 

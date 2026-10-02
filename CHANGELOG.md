@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fmtstr_leak, ret2dlresolve, ret2csu, stack_pivot, got_overwrite.
 - `augure-benchmark`: per-suite concordance harness with exit-code gate;
   dedicated CI job.
+- `augure-profiler` gem (metasm isolated, LGPL): ELF in, facts out -
+  checksec, PLT imports, unsafe-symbol hints, semantic gadget
+  classification; `augure-profile` CLI; compiled-binary test suite.
 - Documentation: commercial README (mermaid pipeline), Diataxis suite
   (tutorial, how-tos, reference, architecture), auditability page with
   red/blue/purple team sections.
