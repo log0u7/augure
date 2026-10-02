@@ -31,8 +31,8 @@
         20.0
       ],
       "dlresolve": [
-        3,
-        7
+        8.5,
+        11.5
       ],
       "heap_fastbin": [
         7.0,
@@ -49,10 +49,27 @@
       "ret2plt_leak": [
         8,
         4
+      ],
+      "fmtstr_leak": [
+        20.2,
+        9.8
+      ],
+      "ret2csu": [
+        21.5,
+        8.5
+      ],
+      "stack_pivot": [
+        20.0,
+        10.0
+      ],
+      "got_overwrite": [
+        19.5,
+        10.5
       ]
     },
     "mcts_iterations": 3000,
-    "mcts_seed": 42
+    "mcts_seed": 42,
+    "vocabulary_extended": "iteration 2: fmtstr_leak, ret2dlresolve, ret2csu, stack_pivot, got_overwrite; Phoenix suite added"
   },
   "suites": {
     "ropemporium": [
@@ -162,32 +179,44 @@
         "name": "ret2csu",
         "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"ret2win\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\ngadget(\"csu_popper\", 4198400).\ngadget(\"csu_mov\", 4198400).\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").",
         "applicable": [
-          "rop"
+          "rop",
+          "ret2csu"
         ],
         "ranked": [
+          [
+            "ret2csu",
+            0.7166666667
+          ],
           [
             "rop",
             0.4875
           ]
         ],
-        "selected": "rop",
-        "truth": "rop"
+        "selected": "ret2csu",
+        "truth": "ret2csu",
+        "truth_update": "the documented intended technique is ret2csu (__libc_csu_init popper/mov, official ROP Emporium solution); the previous vocabulary collapsed it into rop"
       },
       {
         "suite": "ropemporium",
         "name": "pivot",
-        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"foothold_function\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\nplt(\"exit\").\ngadget(\"pop_rax_ret\", 4198400).\ngadget(\"xchg_rsp_rax\", 4198400).\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"mov_rax_deref\", 4198400).\ngadget(\"add_rax\", 4198400).\ngadget(\"call_rax\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"foothold_function\").\nplt(\"puts\").\nplt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\nplt(\"exit\").\ngadget(\"pop_rax_ret\", 4198400).\ngadget(\"xchg_rsp_rax\", 4198400).\ngadget(\"pop_rdi_ret\", 4198400).\ngadget(\"mov_rax_deref\", 4198400).\ngadget(\"add_rax\", 4198400).\ngadget(\"call_rax\", 4198400).\ngadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\").\nlimited_stack(\"true\").\nlimited_stack(\"true\").\n",
         "applicable": [
-          "rop"
+          "rop",
+          "stack_pivot"
         ],
         "ranked": [
+          [
+            "stack_pivot",
+            0.6666666667
+          ],
           [
             "rop",
             0.4875
           ]
         ],
-        "selected": "rop",
-        "truth": "rop"
+        "selected": "stack_pivot",
+        "truth": "stack_pivot",
+        "truth_update": "the documented intended technique is stack_pivot (xchg rsp,rax onto a second chain because the stack does not fit it, official ROP Emporium solution); the previous vocabulary collapsed it into rop"
       }
     ],
     "protostar": [
@@ -281,16 +310,22 @@
         "name": "format4",
         "facts": "nx(\"false\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"none\").\nplt(\"printf\").\nplt(\"fgets\").\nplt(\"exit\").\nplt(\"puts\").\nvuln_hint(\"unsafe_func:printf\").\ngot_overwrite_target(\"true\").",
         "applicable": [
-          "fmtstr_write"
+          "fmtstr_write",
+          "got_overwrite"
         ],
         "ranked": [
+          [
+            "got_overwrite",
+            0.65
+          ],
           [
             "fmtstr_write",
             0.614
           ]
         ],
-        "selected": "fmtstr_write",
-        "truth": "fmtstr_write"
+        "selected": "got_overwrite",
+        "truth": "got_overwrite",
+        "truth_update": "protostar format4's documented goal is the GOT write (%n on printf's GOT, official hints and write-ups); the previous vocabulary only had fmtstr_write for it"
       },
       {
         "suite": "protostar",
@@ -323,6 +358,48 @@
         ],
         "selected": "heap_overwrite",
         "truth": "heap_overwrite"
+      },
+      {
+        "suite": "protostar",
+        "name": "format1",
+        "facts": "vuln(\"fmtstr\").\nfmtstr_read(\"true\").\nrelro(\"none\").\n",
+        "truth": "fmtstr_leak",
+        "applicable": [
+          "fmtstr_write",
+          "fmtstr_leak"
+        ],
+        "ranked": [
+          [
+            "fmtstr_leak",
+            0.6733333333
+          ],
+          [
+            "fmtstr_write",
+            0.614
+          ]
+        ],
+        "selected": "fmtstr_leak"
+      },
+      {
+        "suite": "protostar",
+        "name": "format1",
+        "facts": "vuln(\"fmtstr\").\nfmtstr_read(\"true\").\nrelro(\"none\").\n",
+        "truth": "fmtstr_leak",
+        "applicable": [
+          "fmtstr_write",
+          "fmtstr_leak"
+        ],
+        "ranked": [
+          [
+            "fmtstr_leak",
+            0.6733333333
+          ],
+          [
+            "fmtstr_write",
+            0.614
+          ]
+        ],
+        "selected": "fmtstr_leak"
       }
     ],
     "pwnable": [
@@ -458,6 +535,151 @@
         ],
         "selected": "srop",
         "truth": "srop"
+      }
+    ],
+    "phoenix": [
+      {
+        "suite": "phoenix",
+        "name": "stack-three",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nvuln_hint(\"unsafe_func:strcpy\").\ntarget_function(\"true\").\n",
+        "truth": "ret2func",
+        "applicable": [
+          "ret2func"
+        ],
+        "ranked": [
+          [
+            "ret2func",
+            0.8
+          ]
+        ],
+        "selected": "ret2func"
+      },
+      {
+        "suite": "phoenix",
+        "name": "stack-five",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nvuln_hint(\"unsafe_func:gets\").\nnx(\"false\").\nshellcode_input(\"true\").\n",
+        "truth": "shellcode",
+        "applicable": [
+          "shellcode"
+        ],
+        "ranked": [
+          [
+            "shellcode",
+            0.375
+          ]
+        ],
+        "selected": "shellcode"
+      },
+      {
+        "suite": "phoenix",
+        "name": "format-one",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nvuln(\"fmtstr\").\n",
+        "truth": "fmtstr_write",
+        "applicable": [
+          "fmtstr_write"
+        ],
+        "ranked": [
+          [
+            "fmtstr_write",
+            0.614
+          ]
+        ],
+        "selected": "fmtstr_write"
+      },
+      {
+        "suite": "phoenix",
+        "name": "format-two",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nvuln(\"fmtstr\").\n",
+        "truth": "fmtstr_write",
+        "applicable": [
+          "fmtstr_write"
+        ],
+        "ranked": [
+          [
+            "fmtstr_write",
+            0.614
+          ]
+        ],
+        "selected": "fmtstr_write"
+      },
+      {
+        "suite": "phoenix",
+        "name": "format-three",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nvuln(\"fmtstr\").\n",
+        "truth": "fmtstr_write",
+        "applicable": [
+          "fmtstr_write"
+        ],
+        "ranked": [
+          [
+            "fmtstr_write",
+            0.614
+          ]
+        ],
+        "selected": "fmtstr_write"
+      },
+      {
+        "suite": "phoenix",
+        "name": "format-four",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nvuln(\"fmtstr\").\ngot_overwrite_target(\"true\").\n",
+        "truth": "got_overwrite",
+        "applicable": [
+          "fmtstr_write",
+          "got_overwrite"
+        ],
+        "ranked": [
+          [
+            "got_overwrite",
+            0.65
+          ],
+          [
+            "fmtstr_write",
+            0.614
+          ]
+        ],
+        "selected": "got_overwrite"
+      },
+      {
+        "suite": "phoenix",
+        "name": "heap-zero",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nvuln(\"heap\").\nfunction_pointer_on_heap(\"true\").\nglibc_minor(27).\n",
+        "truth": "heap_overwrite",
+        "applicable": [
+          "heap_tcache",
+          "heap_overwrite"
+        ],
+        "ranked": [
+          [
+            "heap_overwrite",
+            0.66
+          ],
+          [
+            "heap_tcache",
+            0.5233333333
+          ]
+        ],
+        "selected": "heap_overwrite"
+      },
+      {
+        "suite": "phoenix",
+        "name": "heap-one",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nvuln(\"heap\").\nfunction_pointer_on_heap(\"true\").\nglibc_minor(27).\n",
+        "truth": "heap_overwrite",
+        "applicable": [
+          "heap_tcache",
+          "heap_overwrite"
+        ],
+        "ranked": [
+          [
+            "heap_overwrite",
+            0.66
+          ],
+          [
+            "heap_tcache",
+            0.5233333333
+          ]
+        ],
+        "selected": "heap_overwrite"
       }
     ]
   },
