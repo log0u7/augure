@@ -89,6 +89,16 @@ RSpec.describe Augure::Facts do
         expect(described_class.parse(facts.to_s).to_s).to eq(facts.to_s)
       end
     end
+
+    it "accepts the extended vocabulary: fmtstr_read, reloc_writable, dt_lazy, limited_stack" do
+      text = "fmtstr_read(\"true\").\nreloc_writable(\"true\").\n" \
+             "dt_lazy(\"true\").\nlimited_stack(\"true\").\n"
+      facts = described_class.parse(text)
+      expect(facts.rel("fmtstr_read")).to eq([["true"]])
+      expect(facts.rel("reloc_writable")).to eq([["true"]])
+      expect(facts.rel("dt_lazy")).to eq([["true"]])
+      expect(facts.rel("limited_stack")).to eq([["true"]])
+    end
   end
 
   describe ".from_file" do
