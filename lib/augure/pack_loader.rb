@@ -25,9 +25,9 @@ module Augure
       corpus = JSON.parse(File.read(corpus_path))
       base_priors = Pipeline.default_priors
       corpus["suites"].values.flatten.each do |entry|
-        before = Pipeline.analyze(facts: entry["facts"], priors: base_priors)
+        before = Pipeline.analyze(facts: entry["facts"], priors: base_priors, plan: false)
         after = Pipeline.analyze(facts: entry["facts"], priors: priors_with(packs, base_priors),
-          packs: packs)
+                                 packs: packs, plan: false)
         # Additive packs may extend applicable/ranking with NEW techniques
         # below the documented top - what they must never do: (1) move an
         # EXISTING technique's order, (2) take the top-1 of a DOCUMENTED

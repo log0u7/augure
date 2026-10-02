@@ -1,0 +1,32 @@
+# Canonique: le modele de technique pack pour agents et operateurs.
+# Structure, vocabulaire et limites: voir docs/pack-format.md.
+technique: ret2csu_v2
+author: Gregory Epp
+source: https://ropemporium.com/challenge/ret2csu.html
+
+rules:
+  - id: app_ret2csu_v2
+    head: [applicable, ret2csu_v2]
+    conditions:
+      - [fact, vuln, sof]
+      - [fact, nx, true]
+      - [match, gadget, 0, csu]
+
+kb:
+  - id: ret2csu_v2_001
+    technique: ret2csu_v2
+    description: >
+      __libc_csu_init universal gadget populates rdx/rsi/rdi in
+      gadget-sparse binaries; the popper and mov gadgets enable
+      controlled multi-argument calls.
+    chain: [csu_popper, csu_mov, target_fn]
+    unlocks: [libc_base]
+    success_rate: 0.75
+
+mcts:
+  requires: []
+  provides: [libc_base]
+  terminal: false
+  success: 0.70
+
+priors: [14, 6]

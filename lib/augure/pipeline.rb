@@ -21,7 +21,9 @@ module Augure
     #   {applicable:, verified:, ranking:, selected:, plan:, explain:}
     #   The --json payload is the same hash stamped with
     #   "schema": "augure/decision@1" (stable contract).
-    def analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256, packs: nil)
+    # plan: false skips the MCTS search (the corpus guard needs only the
+    # deterministic applicable + prior-mean ranking; MCTS is the costly part).
+    def analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256, packs: nil, plan: true)
       facts = Facts.parse(facts) if facts.is_a?(String)
       engine_rules = packs ? Rules.all + packs.flat_map(&:rules) : Rules.all
       effective_priors = priors || PackLoader.priors_with(packs, default_priors)
@@ -34,7 +36,7 @@ module Augure
       ranking = bandit.ranking_of(applicable)
       candidates = verified.select { |_, v| v[:status] == :sat }.keys
       selected = bandit.select(candidates.empty? ? applicable : candidates)
-      plan = plan_for(applicable, seed: seed, packs: packs)
+      plan = plan ? plan_for(applicable, seed: seed, packs: packs) : []
 
       {
         applicable: applicable,
