@@ -16,12 +16,15 @@ module Augure
       verified = verify(applicable, facts: facts, solver: solver, buffer_size: buffer_size)
 
       bandit = selector(priors: priors)
-      selected = bandit.select(verified.keys.empty? ? applicable : verified.keys)
+      ranking = bandit.ranking_of(applicable)
+      candidates = verified.select { |_, v| v[:status] == :sat }.keys
+      selected = bandit.select(candidates.empty? ? applicable : candidates)
       plan = plan_for(applicable, seed: seed)
 
       {
         applicable: applicable,
         verified: verified,
+        ranking: ranking.map(&:first),
         selected: selected,
         plan: plan,
         explain: {provenance: engine_result.provenance_by_head

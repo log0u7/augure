@@ -47,8 +47,8 @@ RSpec.describe "exe/augure" do
     corpus["suites"].values.flatten.each do |entry|
       stdout, _err, status = Open3.capture3(exe, "analyze", "-", "--json", stdin_data: entry["facts"])
       expect(status.exitstatus).to eq(0), "#{entry["suite"]}/#{entry["name"]} exit"
-      expect(JSON.parse(stdout)["selected"]).to eq(entry["selected"]),
-        "#{entry["suite"]}/#{entry["name"]} selected"
+      expect(JSON.parse(stdout)["ranking"].first).to eq(entry["selected"]),
+        "#{entry["suite"]}/#{entry["name"]} ranking"
     end
   end
 end

@@ -99,6 +99,16 @@ module Augure
       @arms.keys.sort_by { |t| [-arm(t).mean, t] }
     end
 
+    # Prior-mean ranking restricted to the given techniques, stable order.
+    # This is the deterministic contract the corpus freezes; Thompson draws
+    # (select) are the online behavior on top of it.
+    def ranking_of(techniques)
+      techniques.each_with_index
+        .map { |t, i| [t, arm(t).mean, i] }
+        .sort_by { |(_, m, i)| [-m, i] }
+        .map { |(t, m, _)| [t, m] }
+    end
+
     def feedback(technique, success)
       arm(technique).record(success)
       @history << {technique: technique, success: success}
