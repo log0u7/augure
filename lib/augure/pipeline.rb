@@ -21,18 +21,20 @@ module Augure
     #   {applicable:, verified:, ranking:, selected:, plan:, explain:}
     #   The --json payload is the same hash stamped with
     #   "schema": "augure/decision@1" (stable contract).
-    def analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256)
+    def analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256, packs: nil)
       facts = Facts.parse(facts) if facts.is_a?(String)
-      engine_result = Engine.new(facts).run
+      engine_rules = packs ? Rules.all + packs.flat_map(&:rules) : Rules.all
+      effective_priors = priors || PackLoader.priors_with(packs, default_priors)
+      engine_result = Engine.new(facts, rules: engine_rules).run
       applicable = engine_result.applicable
 
       verified = verify(applicable, facts: facts, solver: solver, buffer_size: buffer_size)
 
-      bandit = selector(priors: priors)
+      bandit = selector(priors: effective_priors)
       ranking = bandit.ranking_of(applicable)
       candidates = verified.select { |_, v| v[:status] == :sat }.keys
       selected = bandit.select(candidates.empty? ? applicable : candidates)
-      plan = plan_for(applicable, seed: seed)
+      plan = plan_for(applicable, seed: seed, packs: packs)
 
       {
         applicable: applicable,
@@ -43,7 +45,7 @@ module Augure
         explain: {provenance: engine_result.provenance_by_head
           .select { |head, _| head[0] == Rules::APPLICABLE }
           .transform_keys { |head| head[1] }
-          .transform_values { |provs| provs.map { |p| {rule: p[:rule], evidence: p[:evidence]} } }}
+          .transform_values { |provs| provs.map { |p| {rule: p[:rule], evidence: p[:evidence], origin: p[:origin]} } }}
       }
     end
 
@@ -76,10 +78,11 @@ module Augure
       end
     end
 
-    def plan_for(applicable, seed:)
+    def plan_for(applicable, seed: nil, packs: nil)
       return [] if applicable.empty?
 
-      _first, path = Mcts.plan(applicable, iterations: 2000, seed: seed || 42)
+      model = packs ? Mcts.merged_model(packs) : Mcts::STAGE_MODEL
+      _first, path = Mcts.plan(applicable, iterations: 2000, seed: seed || 42, model: model)
       path
     end
   end

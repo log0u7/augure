@@ -112,7 +112,7 @@ module Augure
         key = [r, t[0]]
         entries = provs[key] ||= []
         evidence.each do |combo|
-          entries << {rule: rule_for(key), evidence: combo.reject(&:empty?)}
+          entries << {rule: rule_for(key), origin: origin_for(key), evidence: combo.reject(&:empty?)}
         end
       end
       Result.new(derived, provs)
@@ -120,6 +120,10 @@ module Augure
 
     def rule_for(head_key)
       @rules.find { |r| r.head == head_key }&.id
+    end
+
+    def origin_for(head_key)
+      @rules.find { |r| r.head == head_key }&.origin
     end
   end
 end

@@ -46,45 +46,55 @@ module Augure
         Set.new.freeze
       end
 
-      def available(caps, allowed)
-        STAGE_MODEL.filter_map do |tech, (req, _, _, _)|
+      def available(caps, allowed, model: STAGE_MODEL)
+        model.filter_map do |tech, (req, _, _, _)|
           tech if allowed.include?(tech) && req.all? { |r| caps.include?(r) }
         end
       end
 
-      def transition(caps, tech)
-        caps + STAGE_MODEL.fetch(tech)[1]
+      def transition(caps, tech, model: STAGE_MODEL)
+        caps + model.fetch(tech)[1]
       end
 
-      def terminal?(caps)
+      def terminal?(caps, model: STAGE_MODEL)
         caps.include?("shell")
       end
 
-      def stage(tech)
-        STAGE_MODEL.fetch(tech)
+      def stage(tech, model: STAGE_MODEL)
+        model.fetch(tech)
+      end
+
+      # Built-in stage model + technique-pack transitions (packs only add).
+      def merged_model(packs)
+        merged = STAGE_MODEL.dup
+        Array(packs).each do |pack|
+          m = pack.mcts
+          merged[pack.technique] = [m["requires"], m["provides"], m["terminal"], m["success"]]
+        end
+        merged.freeze
       end
 
       # Random rollout: discounted product of success rates down the path.
       # Reaching shell is necessary but not sufficient: the terminal
       # technique's own success scales the reward.
-      def rollout(caps, allowed, depth: 0, rng: Random.new, max_depth: MAX_DEPTH)
+      def rollout(caps, allowed, depth: 0, rng: Random.new, max_depth: MAX_DEPTH, model: STAGE_MODEL)
         return 1.0 if terminal?(caps)
         return 0.0 if depth >= max_depth
 
-        avail = available(caps, allowed)
+        avail = available(caps, allowed, model: model)
         return 0.0 if avail.empty?
 
         tech = avail[rand_index(rng, avail.size)]
-        success = stage(tech)[3]
-        new_caps = transition(caps, tech)
-        success * (DISCOUNT**depth) * rollout(new_caps, allowed, depth: depth + 1, rng: rng)
+        success = stage(tech, model: model)[3]
+        new_caps = transition(caps, tech, model: model)
+        success * (DISCOUNT**depth) * rollout(new_caps, allowed, depth: depth + 1, rng: rng, model: model)
       end
 
       # MCTS from an empty capability set: best first move + most-visited path.
-      def plan(allowed, iterations: 2000, seed: nil)
+      def plan(allowed, iterations: 2000, seed: nil, model: STAGE_MODEL)
         rng = seed ? Random.new(seed) : Random.new
         root = Node.new(caps: caps)
-        root.untried = available(root.caps, allowed)
+        root.untried = available(root.caps, allowed, model: model)
 
         iterations.times do
           node = root
@@ -95,18 +105,18 @@ module Augure
           # 2. Expansion
           unless node.untried.empty?
             tech = node.untried.pop
-            new_caps = transition(node.caps, tech)
+            new_caps = transition(node.caps, tech, model: model)
             child = Node.new(caps: new_caps, technique_used: tech, parent: node)
-            child.untried = terminal?(new_caps) ? [] : available(new_caps, allowed)
+            child.untried = terminal?(new_caps) ? [] : available(new_caps, allowed, model: model)
             node.children << child
             node = child
           end
           # 3. Simulation. An already-terminal expansion node scores its own
           #    technique's success, not a flat 1.0.
           reward = if terminal?(node.caps) && node.technique_used
-            stage(node.technique_used)[3]
+            stage(node.technique_used, model: model)[3]
           else
-            rollout(node.caps, allowed, rng: rng)
+            rollout(node.caps, allowed, rng: rng, model: model)
           end
           # 4. Backpropagation
           until node.nil?
@@ -121,7 +131,7 @@ module Augure
         until node.children.empty?
           node = node.children.max_by(&:visits)
           path << node.technique_used
-          break if terminal?(node.caps)
+          break if terminal?(node.caps, model: model)
         end
         best_first = root.children.max_by(&:visits)&.technique_used
         [best_first, path]

@@ -14,7 +14,7 @@ module Augure
   #   [:match,    rel, idx, pattern]   arg idx matches /pattern/
   #   [:cmp,      rel, op, n]          integer arg satisfies V <op> n
   class Rules
-    Rule = Struct.new(:id, :head, :conditions, :source)
+    Rule = Struct.new(:id, :head, :conditions, :source, :origin)
 
     APPLICABLE = "applicable"
 
