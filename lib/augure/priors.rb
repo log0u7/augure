@@ -18,4 +18,15 @@ module Augure
     "heap_overwrite" => [12, 8],
     "ret2plt_leak" => [8, 4]
   }.freeze
+
+  # Priors for techniques the AG simulation did not cover. Authored from
+  # documented public suites (ROP Emporium, Protostar, exploit.education
+  # Phoenix write-ups) and calibrated with KB pseudo-counts - declared as
+  # authored constants, not as measured results.
+  EXTENDED_PRIORS = {
+    "fmtstr_leak" => [13, 7],   # leaks are enablers: they defeat PIE/canary
+    "ret2csu" => [14, 6],       # reliable when the csu gadgets exist
+    "stack_pivot" => [13, 7],   # required under stack-space constraints
+    "got_overwrite" => [13, 7]  # partial RELRO makes GOT redirection cheap
+  }.freeze
 end

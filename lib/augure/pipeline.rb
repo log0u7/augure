@@ -41,7 +41,9 @@ module Augure
 
     def default_priors
       @default_priors ||= begin
-        merged = AG_PRIORS.transform_values(&:dup)
+        # Disjoint by design: EXTENDED_PRIORS covers techniques the AG
+        # simulation never scored.
+        merged = AG_PRIORS.merge(EXTENDED_PRIORS)
         KnowledgeBase.priors.each do |tech, (a, b)|
           merged[tech] = if merged[tech]
             [merged[tech][0] + a, merged[tech][1] + b]
