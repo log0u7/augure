@@ -52,19 +52,15 @@ RSpec.describe AugureMcp::Server do
       request = %( {"jsonrpc":"2.0","id":1,"method":"tools/call","params":#{params}} ) + "\n"
       out, err, s = Open3.capture3("bundle", "exec", exe, stdin_data: request)
       expect(s.exitstatus).to eq(0), "exit #{s.exitstatus}, stderr: #{err.lines.first(3).join}"
-      response = out.lines.map(&:chomp).compact
-        .filter_map { |l|
-        begin
-          JSON.parse(l)
-        rescue
-          nil
-        end
-      }
-        .find { |j| j["id"] == 1 }
+      response = json_lines(out).find { |j| j["id"] == 1 }
       expect(response).not_to be_nil, "no JSON-RPC response on stdout; got: #{out[0, 300].inspect}"
       text = response.dig("result", "content", 0, "text")
       expect(text).not_to be_nil, "no tool text in response: #{response.inspect[0, 300]}"
       expect(JSON.parse(text)["ranking"].first).to eq("shellcode")
     end
+  end
+
+  def json_lines(out)
+    out.lines.map(&:chomp).compact.filter_map { |line| JSON.parse(line) rescue nil }
   end
 end
