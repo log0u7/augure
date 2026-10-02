@@ -4,6 +4,8 @@ source "https://rubygems.org"
 
 gemspec
 
+gemspec path: "profiler", name: "augure-profiler"
+
 group :development, :test do
   gem "rspec", "~> 3.13"
   gem "standard", "~> 1.56"

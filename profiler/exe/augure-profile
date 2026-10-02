@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "optparse"
+require_relative "../lib/augure-profiler"
+
+out_path = nil
+OptionParser.new do |opts|
+  opts.banner = "Usage: augure-profile <binary> [-o target.facts]"
+  opts.on("-o PATH", "Write facts to PATH (default: stdout)") { |v| out_path = v }
+end.parse!(ARGV)
+
+binary = ARGV.shift or abort(<<~USAGE)
+  Usage: augure-profile <binary> [-o target.facts]
+
+  Generates an augure fact file from an ELF binary: checksec, PLT
+  imports, unsafe-symbol hints and semantically classified gadgets.
+  The binary is read-only; the profiler never executes anything.
+USAGE
+
+begin
+  facts = AugureProfiler::Profiler.new(binary).facts
+  if out_path
+    File.write(out_path, facts.to_s)
+    warn "augure-profile: wrote #{out_path} (#{facts.size} facts)"
+  else
+    puts facts
+  end
+rescue Metasm::ParseError, StandardError => e
+  abort("augure-profile: #{binary}: #{e.message}")
+end
