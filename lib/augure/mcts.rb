@@ -23,6 +23,10 @@ module Augure
       # modeling the stack-space constraint.
       "ret2plt_leak_big" => [%w[pivot], %w[libc_base], false, 0.68],
       "ret2libc_big" => [%w[pivot libc_base], %w[shell], true, 0.85],
+      # Extended vocabulary: techniques documented by public suites.
+      "ret2csu" => [[], %w[libc_base], false, 0.70],
+      "dlresolve" => [[], %w[shell], true, 0.55],
+      "got_overwrite" => [[], %w[shell], true, 0.65],
       # PinTheft (RDS zerocopy double-free privesc, V12 Security): a
       # DOCUMENTED external chain collapsed to its load-bearing spine.
       "io_uring_register" => [[], %w[iouring], false, 0.90],

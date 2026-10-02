@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "json"
+
 module Augure
   # Retrieval-augmented knowledge base over a seed corpus of documented
   # exploitation patterns (ROP Emporium / Protostar / pwnable.tw write-ups).
