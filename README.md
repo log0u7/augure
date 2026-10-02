@@ -44,6 +44,8 @@ That is the product. Not autonomy. **Accountability.**
 
 ```sh
 gem install augure
+augure doctor                              # verify the environment
+augure analyze examples/ret2win.facts      # your first decision
 ```
 
 Profile a real binary into facts, then decide on them:

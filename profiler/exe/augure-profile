@@ -8,6 +8,10 @@ out_path = nil
 OptionParser.new do |opts|
   opts.banner = "Usage: augure-profile <binary> [-o target.facts]"
   opts.on("-o PATH", "Write facts to PATH (default: stdout)") { |v| out_path = v }
+  opts.on("--version", "Print the version") do
+    puts "augure-profiler #{AugureProfiler::VERSION}"
+    exit 0
+  end
 end.parse!(ARGV)
 
 binary = ARGV.shift or abort(<<~USAGE)

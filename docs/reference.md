@@ -150,7 +150,19 @@ stderr names the line).
 
 ### `Augure::Pipeline`
 - `.analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256) ->
-  {applicable:, verified:, selected:, plan:, explain:}`
+  {applicable:, verified:, ranking:, selected:, plan:, explain:}`
+
+### Machine payload contract
+
+`augure analyze --json` emits the decision hash stamped with a stable
+schema tag:
+
+```json
+{ "schema": "augure/decision@1", "applicable": [...], ... }
+```
+
+Consumers (CI, agents, the MCP server) pin `augure/decision@1`; a
+breaking change bumps the tag and is documented in the CHANGELOG.
 
 ### `Augure::KnowledgeBase`
 - `.corpus -> [entry]` (17 documented patterns)

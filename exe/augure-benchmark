@@ -13,6 +13,10 @@ threshold = 1.00
 OptionParser.new do |opts|
   opts.banner = "Usage: augure-benchmark <corpus.json> [--min-top1 N]"
   opts.on("--min-top1 N", Float, "Fail below this top-1 concordance (default 1.00)") { |v| threshold = v }
+  opts.on("--version", "Print the version") do
+    puts "augure #{Augure::VERSION} (benchmark)"
+    exit 0
+  end
 end.parse!(ARGV)
 
 path = ARGV.shift or abort("Usage: augure-benchmark <corpus.json> [--min-top1 N]")

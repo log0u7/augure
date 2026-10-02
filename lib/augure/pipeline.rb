@@ -8,6 +8,19 @@ module Augure
   module Pipeline
     module_function
 
+    # Decide on a fact base and return the auditable decision.
+    #
+    # @param facts [String, Facts] raw fact text or a parsed fact base
+    # @param seed [Integer, nil] seed for deterministic bandit/MCTS draws
+    # @param priors [Hash{String => [Numeric, Numeric]}, nil] prior table
+    #   overriding the AG+EXTENDED+KB defaults (see Priors.from_trail
+    #   usage in lictor for the closed loop)
+    # @param solver [String, nil] optional SMT solver binary for the SMT path
+    # @param buffer_size [Integer] stack budget for payload-fit checks
+    # @return [Hash] the decision:
+    #   {applicable:, verified:, ranking:, selected:, plan:, explain:}
+    #   The --json payload is the same hash stamped with
+    #   "schema": "augure/decision@1" (stable contract).
     def analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256)
       facts = Facts.parse(facts) if facts.is_a?(String)
       engine_result = Engine.new(facts).run
