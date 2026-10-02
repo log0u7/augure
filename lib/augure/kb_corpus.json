@@ -1,0 +1,265 @@
+[
+ {
+  "id": "ret2plt_nopie_001",
+  "technique": "ret2plt",
+  "target_class": "nx_no_pie",
+  "source": "ropemporium_ret2win",
+  "description": "ret2plt on no-PIE binary with system@plt. Requires pop rdi gadget binsh string NX on PIE off. Common mistake forgetting ret alignment x86_64 ABI movaps.",
+  "chain": [
+   "pop_rdi_ret",
+   "binsh_addr",
+   "ret_align",
+   "system_plt"
+  ],
+  "unlocks": [],
+  "success_rate": 0.85
+ },
+ {
+  "id": "ret2plt_partial_relro_001",
+  "technique": "ret2plt",
+  "target_class": "nx_no_pie",
+  "source": "protostar_stack6",
+  "description": "ret2plt with partial RELRO. GOT writable but not needed. Technique does not require GOT overwrite. system plt direct.",
+  "chain": [
+   "pop_rdi_ret",
+   "binsh_addr",
+   "system_plt"
+  ],
+  "unlocks": [],
+  "success_rate": 0.82
+ },
+ {
+  "id": "ret2libc_leak_001",
+  "technique": "ret2libc",
+  "target_class": "nx_pie",
+  "source": "phoenix_stack5",
+  "description": "ret2libc via puts leak defeat ASLR. Chain leak libc via puts plt calc system offset pop rdi. Requires pop rdi puts PLT known libc version.",
+  "chain": [
+   "pop_rdi_ret",
+   "got_puts",
+   "puts_plt",
+   "ret_align",
+   "pop_rdi_ret",
+   "binsh_offset",
+   "system_libc"
+  ],
+  "unlocks": [],
+  "success_rate": 0.65
+ },
+ {
+  "id": "fmtstr_arbitrary_write_001",
+  "technique": "fmtstr_write",
+  "target_class": "fmtstr",
+  "source": "protostar_format4",
+  "description": "Format string arbitrary write via %n overwrite GOT. Calibration find offset with %p chain first. FORTIFY_SOURCE breaks %n in glibc 2.17 and above.",
+  "chain": [
+   "leak_stack_canary",
+   "leak_pie_base",
+   "got_overwrite"
+  ],
+  "unlocks": [],
+  "success_rate": 0.55
+ },
+ {
+  "id": "fmtstr_stack_leak_001",
+  "technique": "fmtstr_write",
+  "target_class": "fmtstr",
+  "source": "ctf_generic",
+  "description": "Format string stack leak defeat canary PIE base address. Useful as first stage before ret2libc or ROP chain.",
+  "chain": [
+   "fmtstr_leak_canary",
+   "fmtstr_leak_pie"
+  ],
+  "unlocks": [
+   "ret2libc",
+   "rop"
+  ],
+  "success_rate": 0.72
+ },
+ {
+  "id": "rop_execve_001",
+  "technique": "rop",
+  "target_class": "nx_pie_full_prot",
+  "source": "ropemporium_write4",
+  "description": "ROP chain execve binsh NULL NULL syscall. Requires pop rdi rsi rdx gadgets write primitive binsh string syscall gadget ROPgadget ropper discovery.",
+  "chain": [
+   "write_binsh",
+   "pop_rdi",
+   "binsh_addr",
+   "pop_rsi",
+   "null",
+   "pop_rdx",
+   "null",
+   "syscall"
+  ],
+  "unlocks": [],
+  "success_rate": 0.45
+ },
+ {
+  "id": "fastbin_dup_001",
+  "technique": "heap_fastbin",
+  "target_class": "heap_ptmalloc2",
+  "source": "how2heap_fastbin_dup",
+  "description": "Fastbin dup double-free arbitrary write ptmalloc2. Only works glibc before 2.32 no safe linking. Requires controlled heap double-free primitive.",
+  "chain": [
+   "double_free",
+   "fastbin_overwrite",
+   "arbitrary_write"
+  ],
+  "unlocks": [],
+  "success_rate": 0.4
+ },
+ {
+  "id": "srop_001",
+  "technique": "srop",
+  "target_class": "nx_minimal_gadgets",
+  "source": "ctf_generic",
+  "description": "SROP sigreturn ROP minimal gadgets. Requires syscall gadget sigreturn frame control. Single gadget controls all registers unlike ROP chain.",
+  "chain": [
+   "sigreturn_frame",
+   "syscall"
+  ],
+  "unlocks": [],
+  "success_rate": 0.5
+ },
+ {
+  "id": "chain_fmtstr_ret2libc_001",
+  "technique": "fmtstr_write",
+  "target_class": "nx_pie",
+  "source": "ctf_generic",
+  "description": "Two stage fmtstr leak canary libc base then ret2libc. Classic chain PIE NX canary targets.",
+  "chain": [
+   "fmtstr_leak_canary",
+   "fmtstr_leak_libc",
+   "ret2libc"
+  ],
+  "unlocks": [
+   "ret2libc"
+  ],
+  "success_rate": 0.6
+ },
+ {
+  "id": "chain_puts_leak_rop_001",
+  "technique": "ret2libc",
+  "target_class": "nx_pie",
+  "source": "phoenix_stack7",
+  "description": "puts leak then ROP chain. Stage 1 leak libc base puts plt. Stage 2 construct ROP known libc offsets.",
+  "chain": [
+   "ret2plt_puts_leak",
+   "calc_libc_base",
+   "full_rop"
+  ],
+  "unlocks": [
+   "rop",
+   "ret2libc"
+  ],
+  "success_rate": 0.58
+ },
+ {
+  "id": "unlink_dlmalloc_001",
+  "technique": "heap_overwrite",
+  "target_class": "heap_dlmalloc",
+  "source": "pwnable.kr/unlink",
+  "description": "Unlink macro corruption old dlmalloc arbitrary write. FD BK pointer manipulation overwrite return address shell. Requires heap and stack leak to defeat ASLR.",
+  "chain": [
+   "heap_leak",
+   "stack_leak",
+   "unlink_corrupt",
+   "overwrite_ret"
+  ],
+  "unlocks": [],
+  "success_rate": 0.78
+ },
+ {
+  "id": "tcache_tear_001",
+  "technique": "heap_tcache",
+  "target_class": "heap_tcache",
+  "source": "pwnable.tw/tcache_tear",
+  "description": "Tcache tear double-free poisoning modern glibc. Overwrite free_hook with one_gadget. Unsorted bin attack for libc leak first.",
+  "chain": [
+   "double_free",
+   "tcache_poison",
+   "leak_libc",
+   "overwrite_free_hook",
+   "one_gadget"
+  ],
+  "unlocks": [],
+  "success_rate": 0.62
+ },
+ {
+  "id": "tcache_realloc_fmtstr_001",
+  "technique": "heap_tcache",
+  "target_class": "heap_tcache",
+  "source": "pwnable.tw/realloc",
+  "description": "Tcache dup overwrite atoll GOT with printf. Turns input into format string then leak libc. Overwrite atoll with system for shell.",
+  "chain": [
+   "tcache_dup",
+   "got_overwrite_printf",
+   "fmtstr_leak",
+   "got_overwrite_system"
+  ],
+  "unlocks": [
+   "fmtstr_write"
+  ],
+  "success_rate": 0.55
+ },
+ {
+  "id": "srop_smallest_001",
+  "technique": "srop",
+  "target_class": "minimal_static_nx",
+  "source": "360ctf/smallest",
+  "description": "SROP x86_64 canonical 17 byte binary read rsp ret. read retval sets rax 15 rt_sigreturn send 15 bytes. fake sigframe execve rax 59 rdi binsh syscall gadget.",
+  "chain": [
+   "read_sets_rax_15",
+   "syscall_sigreturn",
+   "fake_frame_execve"
+  ],
+  "unlocks": [],
+  "success_rate": 0.55
+ },
+ {
+  "id": "srop_sickrop_001",
+  "technique": "srop",
+  "target_class": "minimal_static_nx",
+  "source": "hackthebox/sick_rop",
+  "description": "SROP x86_64 mprotect variant static binary read write. rax 15 rt_sigreturn via read write byte count. fake sigframe mprotect rax 10 region rwx then shellcode.",
+  "chain": [
+   "set_rax_15",
+   "syscall_sigreturn",
+   "fake_frame_mprotect",
+   "region_rwx",
+   "shellcode"
+  ],
+  "unlocks": [],
+  "success_rate": 0.55
+ },
+ {
+  "id": "orw_seccomp_001",
+  "technique": "shellcode",
+  "target_class": "seccomp_nx_off",
+  "source": "pwnable.tw/orw",
+  "description": "Shellcode under seccomp open read write only. No execve allowed so shellcode reads flag file directly. Binary reads shellcode into executable buffer.",
+  "chain": [
+   "inject_shellcode",
+   "open_flag",
+   "read_flag",
+   "write_stdout"
+  ],
+  "unlocks": [],
+  "success_rate": 0.55
+ },
+ {
+  "id": "rop_calc_int80_001",
+  "technique": "rop",
+  "target_class": "nx_canary_static",
+  "source": "pwnable.tw/calc",
+  "description": "ROP chain static binary NX canary int 0x80 execve. Arbitrary relative write builds chain on stack. pop edx pop eax int80 gadgets execve binsh.",
+  "chain": [
+   "arbitrary_write",
+   "build_rop",
+   "int80_execve"
+  ],
+  "unlocks": [],
+  "success_rate": 0.5
+ }
+]
