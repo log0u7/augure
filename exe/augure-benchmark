@@ -1,0 +1,54 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+require "optparse"
+require_relative "../lib/augure"
+
+# Concordance benchmark against the frozen CTF corpus, in the spirit of the
+# Python prototype's benchmark harness: predictions vs documented truth,
+# per suite, with an explicit exit code gate.
+
+threshold = 1.00
+OptionParser.new do |opts|
+  opts.banner = "Usage: augure-benchmark <corpus.json> [--min-top1 N]"
+  opts.on("--min-top1 N", Float, "Fail below this top-1 concordance (default 1.00)") { |v| threshold = v }
+end.parse!(ARGV)
+
+path = ARGV.shift or abort("Usage: augure-benchmark <corpus.json> [--min-top1 N]")
+corpus = JSON.parse(File.read(path))
+meta_priors = corpus.dig("meta", "priors")
+
+puts "  augure-benchmark: prediction vs documented ground truth"
+puts
+
+correct_top1 = 0
+correct_top3 = 0
+n = 0
+
+corpus["suites"].each do |suite, entries|
+  suite_ok1 = 0
+  suite_ok3 = 0
+  entries.each do |entry|
+    result = Augure::Pipeline.analyze(facts: entry["facts"], priors: meta_priors)
+    top3 = result[:ranking].first(3)
+    suite_ok1 += 1 if result[:ranking].first == entry["truth"]
+    suite_ok3 += 1 if top3.include?(entry["truth"])
+  end
+  count = entries.size
+  n += count
+  correct_top1 += suite_ok1
+  correct_top3 += suite_ok3
+  puts format("  %-12s %d/%d top-1   %d/%d top-3",
+    suite, suite_ok1, count, suite_ok3, count)
+end
+
+puts
+pct = correct_top1.to_f / n
+puts format("  Top-1 concordance: %d/%d (%.0f%%)", correct_top1, n, pct * 100)
+puts format("  Top-3 concordance: %d/%d (%.0f%%)", correct_top3, n, (correct_top3.to_f / n) * 100)
+
+if pct < threshold
+  puts format("  BELOW THRESHOLD (%.0f%% < %.0f%%)", pct * 100, threshold * 100)
+  exit 1
+end
