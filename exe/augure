@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+require "optparse"
+require_relative "../lib/augure"
+
+options = {json: false, seed: nil}
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: augure analyze <facts-file | -> [options]"
+  opts.summary_indent = "  "
+
+  opts.on("-j", "--json", "Emit the decision as JSON") { options[:json] = true }
+  opts.on("-s", "--seed N", Integer, "Seed for deterministic bandit/MCTS") { |n| options[:seed] = n }
+  opts.on("-h", "--help", "Show this help") do
+    puts opts
+    exit 0
+  end
+end
+parser.parse!
+
+ARGV.shift == "analyze" or abort(parser.to_s)
+path = ARGV.shift or abort(parser.to_s)
+input = (path == "-") ? $stdin.read : File.read(path)
+
+begin
+  result = Augure::Pipeline.analyze(facts: input, seed: options[:seed])
+  if options[:json]
+    puts JSON.pretty_generate(result)
+  else
+    puts "applicable: #{result[:applicable].join(", ")}"
+    puts "selected:   #{result[:selected]}"
+    puts "plan:       #{result[:plan].join(" -> ")}"
+    result[:explain][:provenance].each do |tech, provs|
+      provs.each do |p|
+        puts "  #{tech} <- #{p[:rule]} (#{p[:evidence].map { |e| e.join("=") }.join(", ")})"
+      end
+    end
+  end
+rescue Augure::MalformedFact, Augure::UnknownPredicate => e
+  abort("augure: #{e.message}")
+end
