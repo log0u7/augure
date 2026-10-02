@@ -72,6 +72,14 @@ module Augure
           source: "syscall or int80 gadget" do |c|
           c.match "gadget", 0, "syscall|int80"
         end
+        b.rule :fam_csu_gadget, %w[has_csu_gadget true],
+          source: "__libc_csu_init popper/mov gadget family" do |c|
+          c.match "gadget", 0, "csu"
+        end
+        b.rule :fam_pivot_gadget, %w[has_pivot_gadget true],
+          source: "stack pivot gadget (xchg/mov rsp)" do |c|
+          c.match "gadget", 0, "xchg"
+        end
         b.rule :enough_from_reg, %w[enough_gadgets true],
           source: "register control alone sustains a ROP chain" do |c|
           c.fact "has_reg_control", "true"
@@ -137,6 +145,72 @@ module Augure
         b.rule :app_fmtstr_write, ["applicable", "fmtstr_write"],
           source: "format string bug: arbitrary write, NX-independent" do |c|
           c.fact "vuln", "fmtstr"
+        end
+        # The leak is a strategy of its own when there is a read primitive or
+        # a protection worth bypassing: %x/%s reads defeat PIE and canaries.
+        b.rule :app_fmtstr_leak_read, ["applicable", "fmtstr_leak"],
+          source: "read primitive: arbitrary stack read via format string" do |c|
+          c.fact "vuln", "fmtstr"
+          c.fact "fmtstr_read", "true"
+        end
+        b.rule :app_fmtstr_leak_pie, ["applicable", "fmtstr_leak"],
+          source: "PIE on: leak a code pointer to defeat ASLR" do |c|
+          c.fact "vuln", "fmtstr"
+          c.fact "pie", "true"
+        end
+        b.rule :app_fmtstr_leak_canary, ["applicable", "fmtstr_leak"],
+          source: "canary on: leak the stack cookie before smashing" do |c|
+          c.fact "vuln", "fmtstr"
+          c.fact "canary", "true"
+        end
+
+        # -- applicable: deferred symbol resolution ----------------------
+        b.rule :app_ret2dlresolve, ["applicable", "ret2dlresolve"],
+          source: "lazy binding + writable relocation: fake DT_SYMTAB " \
+                  "resolves an arbitrary symbol (ROP Emporium " \
+                  "ret2dlresolve, documented)" do |c|
+          c.fact "vuln", "sof"
+          c.fact "nx", "true"
+          c.fact "pie", "false"
+          c.fact "dt_lazy", "true"
+          c.fact "reloc_writable", "true"
+        end
+
+        # -- applicable: __libc_csu_init gadget universe -----------------
+        b.rule :app_ret2csu, ["applicable", "ret2csu"],
+          source: "csu gadgets populate rdx/rsi/rdi in sparse binaries " \
+                  "(ROP Emporium ret2csu, documented)" do |c|
+          c.fact "vuln", "sof"
+          c.fact "nx", "true"
+          c.fact "has_csu_gadget", "true"
+        end
+
+        # -- applicable: stack pivot under space constraints --------------
+        b.rule :app_stack_pivot, ["applicable", "stack_pivot"],
+          source: "limited stack space: pivot to a larger buffer first " \
+                  "(ROP Emporium pivot, documented)" do |c|
+          c.fact "vuln", "sof"
+          c.fact "nx", "true"
+          c.fact "limited_stack", "true"
+          c.fact "has_pivot_gadget", "true"
+        end
+
+        # -- applicable: GOT overwrite ------------------------------------
+        b.rule :app_got_overwrite_sof, ["applicable", "got_overwrite"],
+          source: "writable GOT target: overwrite an entry to redirect " \
+                  "a call via a ROP write primitive (documented)" do |c|
+          c.fact "vuln", "sof"
+          c.fact "nx", "true"
+          c.fact "got_overwrite_target", "true"
+          c.not_fact "relro", "full"
+        end
+        b.rule :app_got_overwrite_fmtstr, ["applicable", "got_overwrite"],
+          source: "writable GOT + format string: %n writes the GOT " \
+                  "entry and redirects the call (phoenix format-four, " \
+                  "documented)" do |c|
+          c.fact "vuln", "fmtstr"
+          c.fact "got_overwrite_target", "true"
+          c.not_fact "relro", "full"
         end
 
         # -- applicable: heap ---------------------------------------------

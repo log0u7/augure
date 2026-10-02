@@ -87,7 +87,8 @@ RSpec.describe Augure::Engine do
     end
 
     it "fires fmtstr_write on format-string vuln regardless of NX" do
-      expect(applicable("vuln(\"fmtstr\").\n")).to eq(["fmtstr_write"])
+      expect(applicable("vuln(\"fmtstr\").\npie(\"false\").\ncanary(\"false\").\n"))
+        .to eq(["fmtstr_write"])
     end
 
     it "splits heap techniques by allocator and glibc minor" do
@@ -120,6 +121,58 @@ RSpec.describe Augure::Engine do
       expect(prov.first[:rule]).to eq(:app_ret2plt)
       expect(prov.first[:evidence]).to include(["vuln", "sof"])
       expect(prov.first[:evidence]).to include(["plt", "system"])
+    end
+  end
+
+  describe "extended vocabulary techniques" do
+    it "fires fmtstr_leak when the read primitive or a protection exists" do
+      read = "vuln(\"fmtstr\").\nfmtstr_read(\"true\").\n"
+      pie = "vuln(\"fmtstr\").\npie(\"true\").\n"
+      canary = "vuln(\"fmtstr\").\ncanary(\"true\").\n"
+      expect(applicable(read)).to include("fmtstr_leak")
+      expect(applicable(pie)).to include("fmtstr_leak")
+      expect(applicable(canary)).to include("fmtstr_leak")
+      # no read primitive and no protection to bypass: the leak has no value
+      bare = "vuln(\"fmtstr\").\npie(\"false\").\ncanary(\"false\").\n"
+      expect(applicable(bare)).to eq(["fmtstr_write"])
+    end
+
+    it "fires ret2dlresolve on lazy binding with writable relocation" do
+      f = "vuln(\"sof\").\nnx(\"true\").\npie(\"false\").\n" \
+          "dt_lazy(\"true\").\nreloc_writable(\"true\").\n"
+      expect(applicable(f)).to eq(["ret2dlresolve"])
+
+      full = f.sub("dt_lazy(\"true\")", "dt_lazy(\"false\")")
+      expect(applicable(full)).to be_empty
+    end
+
+    it "fires ret2csu when csu gadgets exist" do
+      f = "vuln(\"sof\").\nnx(\"true\").\ngadget(\"csu_popper\", 1).\n" \
+          "gadget(\"csu_mov\", 2).\n"
+      expect(applicable(f)).to include("ret2csu")
+    end
+
+    it "fires stack_pivot on xchg gadget with limited stack" do
+      f = "vuln(\"sof\").\nnx(\"true\").\nlimited_stack(\"true\").\n" \
+          "gadget(\"xchg_rsp_rax\", 1).\n"
+      expect(applicable(f)).to include("stack_pivot")
+
+      # No stack constraint: ROP directly is the documented better choice.
+      roomy = "vuln(\"sof\").\nnx(\"true\").\ngadget(\"xchg_rsp_rax\", 1).\n"
+      expect(applicable(roomy)).not_to include("stack_pivot")
+    end
+
+    it "fires got_overwrite when the GOT target is viable and not full RELRO" do
+      f = "vuln(\"sof\").\nnx(\"true\").\ngot_overwrite_target(\"true\").\n" \
+          "relro(\"partial\").\n"
+      expect(applicable(f)).to include("got_overwrite")
+
+      # fmtstr path: %n writes the GOT entry, no NX constraint
+      fmt = "vuln(\"fmtstr\").\ngot_overwrite_target(\"true\").\nrelro(\"partial\").\n"
+      expect(applicable(fmt)).to include("got_overwrite")
+
+      full = f.sub("relro(\"partial\")", "relro(\"full\")")
+      expect(applicable(full)).not_to include("got_overwrite")
     end
   end
 
