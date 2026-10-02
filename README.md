@@ -1,0 +1,184 @@
+# augure
+
+**The auditable exploitation decision layer.**
+
+> *Augur (n.): a Roman official who read the signs, announced the strategy,
+> and kept the record. Before any legion moved, someone had to decide -
+> and account for the decision.*
+
+---
+
+[![CI](https://github.com/log0u7/augure/actions/workflows/ci.yml/badge.svg)](https://github.com/log0u7/augure/actions/workflows/ci.yml)
+[![Gem Version](https://img.shields.io/gem/v/augure)](https://rubygems.org/gems/augure)
+[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.4-ruby.svg)](https://www.ruby-lang.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+Every exploitation framework answers *"how do I run this technique?"*.
+**Augure answers the question nobody automates: *"which technique should run,
+and why - provably?"***
+
+An LLM will confidently recommend `ret2libc` against a target with no libc,
+because it generates text, not proofs. Augure generates proofs, not text:
+
+- **Propose** - Datalog rules over the target's fact base select every
+  applicable technique. Decidable, terminating, readable.
+- **Verify** - arithmetic and SMT-LIB checks confirm the selected technique
+  is *numerically feasible*, not merely logically applicable.
+- **Explain** - every decision ships with its provenance: which rule fired,
+  which facts justified it, which Beta prior and which seeded draw ranked it.
+  Same input + same seed = same decision. Always.
+
+## Why it exists
+
+When an exploit developer picks a technique - *"this is a ret2libc situation"* -
+that pick is a **heuristic**, and heuristics are local optima: fast, usually
+right, never systematically tested. Augure is the test rig for those local
+optima. Run your intuition against the frozen CTF corpus and watch the
+weight inversions: humans overweight shellcode and `ret2libc`; the data
+underweights them. `ret2plt` - the boring, reliable one - was massively
+underrated.
+
+That is the product. Not autonomy. **Accountability.**
+
+## Quickstart
+
+```sh
+gem install augure
+```
+
+```sh
+$ augure analyze target.facts
+applicable: ret2plt, rop
+selected:   ret2plt
+plan:       ret2plt
+  ret2plt <- app_ret2plt (vuln=sof, nx=true, pie=false, plt=system)
+  rop     <- app_rop      (vuln=sof, nx=true, enough_gadgets=true)
+```
+
+Or the machine-readable form:
+
+```console
+$ augure analyze target.facts --json
+{
+  "applicable": ["ret2plt", "rop"],
+  "verified":   { "ret2plt": { "status": "sat" }, "rop": { "status": "sat" } },
+  "selected":   "ret2plt",
+  "plan":       ["ret2plt"],
+  "explain": {
+    "provenance": {
+      "ret2plt": [{ "rule": "app_ret2plt", "evidence": ["vuln=sof", "nx=true", ...] }]
+    }
+  }
+}
+```
+
+From Ruby:
+
+```ruby
+require "augure"
+
+result = Augure::Pipeline.analyze(facts: File.read("target.facts"), seed: 42)
+
+result[:selected]          # => "ret2plt"
+result[:explain]           # => { provenance: { "ret2plt" => [{ rule:, evidence: [...] }] } }
+```
+
+## What is in the box
+
+| Layer | Module | What it does |
+|---|---|---|
+| Facts | `Augure::Facts` | Strict, schema-checked fact parser. Malformed input fails loudly, never silently. |
+| Rules | `Augure::Rules` | Rules-as-data: the single source of truth for applicability. |
+| Engine | `Augure::Engine` | Forward-chaining evaluation with per-decision provenance. |
+| Verifier | `Augure::Verifier` | Arithmetic fast path + SMT-LIB emission. |
+| Solvers | `Augure::SmtProcess` | Subprocess boundary to z3 / bitwuzla / cvc5. Timeout = `:unknown`, never a crash. |
+| Knowledge | `Augure::KnowledgeBase` | 17 documented exploitation patterns; TF-IDF retrieval; Beta prior calibration. |
+| Bandit | `Augure::Bandit` | Thompson sampling over Beta posteriors, seeded and auditable. |
+| Planner | `Augure::Mcts` | Multi-step planning: a leak is worth what it unlocks. |
+| CLI | `exe/augure` | Facts in, decision out, JSON if you want it. |
+
+**Zero runtime dependencies.** Every external capability (Soufflé, SMT
+solvers, LLM providers) enters through a subprocess or HTTP boundary.
+
+## Honest numbers
+
+Augure's decision engine reproduces the frozen CTF benchmark corpus
+byte-for-byte - 24/24 technique classifications across ROP Emporium,
+Protostar and pwnable-style targets, and 5/5 multi-step plans including an
+externally documented kernel chain.
+
+Read that carefully: these are **predictions against frozen ground truth**,
+not field results. The success probabilities in the prior table are
+*authored, not measured*. Augure is an auditable decision layer, and the
+audit begins with this sentence.
+
+| Claim | Evidence |
+|---|---|
+| 24/24 classification parity | `spec/fixtures/ctf_corpus.json`, `spec/augure/engine_spec.rb` |
+| 5/5 plan parity (incl. PinTheft kernel chain) | `spec/augure/mcts_spec.rb` |
+| Ruby engine == frozen Python engine | corpus conformance specs, CI-enforced |
+
+## Why not just ask an LLM?
+
+| | LLM alone | Augure |
+|---|---|---|
+| recommends `ret2libc` with no libc | confidently | structurally impossible (rule-gated) |
+| explains *why* | plausible prose | rule ID + facts + checks + seeded draw |
+| reproducible | no | same seed, same decision |
+| terminates | usually | provably (Datalog) |
+| audit trail | chat log | machine-checkable provenance |
+
+They compose: an LLM proposes hypotheses, Augure disposes. That is the
+generate-then-verify pattern - and it is also exactly what `augure-mcp`
+exposes to agents (Phase 6, see the roadmap).
+
+## Roadmap
+
+- **Phase 2** - native Ruby profiler (metasm-based): binary in, facts out.
+- **Phase 3** - LLM feature extraction behind the fact-whitelist boundary
+  (Anthropic + OpenAI-compatible backends).
+- **Phase 5** - `lictor`: the authorized-ops companion (handoff mode first).
+- **Phase 6** - `augure-mcp`: read-only MCP server exposing `analyze_target`,
+  `list_rules`, `explain_technique` to LLM agents.
+
+## Acceptable use
+
+Augure is a **decision layer**. It contains no exploit code, executes
+nothing, and touches no target. It encodes technique *metadata* - rules,
+facts, feasibility checks - the same class of knowledge as a public
+write-up. Use it for:
+
+- security research, CTF preparation and training;
+- red-team engagement planning where you are authorized to operate;
+- defensive analysis: the same model read backwards tells you which
+  techniques your estate makes impossible.
+
+Do not use it to attack systems you do not own or are not explicitly
+authorized to test.
+
+## The lineage
+
+Augure is generation 3 of a twenty-year lineage: a Perl + SWI-Prolog +
+genetic-algorithm decision layer (2007-2012), a Python neuro-symbolic
+prototype (`strategy-sim`, 2024-2026), and now a Ruby gem built on one
+conviction the original articles already held: **one of these systems is a
+clock, the other is a cat. Augure is the clock.**
+
+The full story - why facts/rules separation outlived every language
+migration - is in `docs/explanation/architecture.md`.
+
+## License
+
+MIT. The optional metasm-based profiler (Phase 2) depends on metasm, LGPL-2.1,
+used as an external library in the readline style.
+
+## Documentation
+
+| I want to... | Read |
+|---|---|
+| get my first decision in 10 minutes | `docs/tutorial.md` |
+| write my own technique rules | `docs/how-to-write-rules.md` |
+| plug a real SMT solver | `docs/how-to-swap-solver.md` |
+| look up the fact format or API | `docs/reference.md` |
+| understand auditability (red/blue/purple) | `docs/auditability.md` |
+| understand why rules-as-data | `docs/explanation-architecture.md` |
