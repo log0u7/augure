@@ -81,7 +81,7 @@ when "doctor"
   end
 when "rules"
   Augure::Rules.all.each do |rule|
-    puts "#{rule.id}"
+    puts rule.id.to_s
     puts "  head: #{rule.head.join("=")}"
     puts "  why:  #{rule.source}"
   end
