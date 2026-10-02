@@ -17,7 +17,8 @@ module Augure
       "got_overwrite_target" => 1, "function_pointer_on_heap" => 1,
       "seccomp" => 1, "shellcode_input" => 1, "sigreturn_frame" => 1,
       "fmtstr_read" => 1, "reloc_writable" => 1, "dt_lazy" => 1,
-      "limited_stack" => 1
+      "limited_stack" => 1, "service" => 1, "software_version" => 1,
+      "remote" => 1
     }.freeze
 
     STRING_TYPES = {

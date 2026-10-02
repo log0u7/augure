@@ -99,6 +99,14 @@ RSpec.describe Augure::Facts do
       expect(facts.rel("dt_lazy")).to eq([["true"]])
       expect(facts.rel("limited_stack")).to eq([["true"]])
     end
+
+    it "accepts the network vocabulary: service, software_version, remote" do
+      text = "service(\"ssh\").\nsoftware_version(\"OpenSSH 8.9p1\").\nremote(\"true\").\n"
+      facts = described_class.parse(text)
+      expect(facts.rel("service")).to eq([["ssh"]])
+      expect(facts.rel("software_version")).to eq([["OpenSSH 8.9p1"]])
+      expect(facts.rel("remote")).to eq([["true"]])
+    end
   end
 
   describe ".from_file" do
