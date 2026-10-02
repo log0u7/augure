@@ -185,9 +185,9 @@ authorized to test.
 
 Augure is generation 3 of a twenty-year lineage: a Perl + SWI-Prolog +
 genetic-algorithm decision layer (2007-2012), a Python neuro-symbolic
-prototype (`strategy-sim`, 2024-2026), and now a Ruby gem built on one
-conviction the original articles already held: **one of these systems is a
-clock, the other is a cat. Augure is the clock.**
+prototype (`strategy-sim`, 2024-2026), and now a Ruby gem. The three
+generations share one conviction: **one of these systems is a clock, the
+other is a cat. Augure is the clock.**
 
 The full story - why facts/rules separation outlived every language
 migration - is in [the architecture explanation](docs/explanation-architecture.md).
