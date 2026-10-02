@@ -6,6 +6,8 @@ gemspec
 
 gemspec path: "profiler", name: "augure-profiler"
 
+gemspec path: "mcp_server", name: "augure-mcp"
+
 group :development, :test do
   gem "rspec", "~> 3.13"
   gem "standard", "~> 1.56"
