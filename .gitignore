@@ -1,0 +1,9 @@
+.DS_Store
+*.gem
+/.bundle
+/coverage
+/pkg
+/tmp
+/.rspec_status
+/spec/reports
+/vendor/bundle
