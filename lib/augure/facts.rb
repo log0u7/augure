@@ -75,6 +75,23 @@ module Augure
       merged
     end
 
+    # Builder API for programmatic construction (the profiler's contract):
+    # identical validation as parsing - same schema, same loud failures.
+    def add(name, *args)
+      unless SCHEMA.key?(name)
+        raise UnknownPredicate, "unknown predicate #{name.inspect}"
+      end
+
+      arity = SCHEMA[name]
+      unless args.size == arity
+        raise MalformedFact, "#{name} expects arity #{arity}, got #{args.size}"
+      end
+
+      check_types(name, args, 0)
+      (@rels[name] ||= []) << args
+      self
+    end
+
     def to_s
       SCHEMA.filter_map do |name, _arity|
         @rels.fetch(name, []).map { |tuple| emit_fact(name, tuple) }
@@ -94,16 +111,16 @@ module Augure
       end
 
       name, raw_args = match[1], match[2]
-      raise UnknownPredicate, "line #{lineno}: unknown predicate #{name.inspect}" unless SCHEMA.key?(name)
-
-      arity = SCHEMA[name]
-      args = parse_args(raw_args, name, lineno)
-      unless args.size == arity
-        raise MalformedFact, "line #{lineno}: #{name} expects arity #{arity}, got #{args.size}"
+      unless SCHEMA.key?(name)
+        raise UnknownPredicate, "line #{lineno}: unknown predicate #{name.inspect}"
       end
 
-      check_types(name, args, lineno)
-      (@rels[name] ||= []) << args
+      args = parse_args(raw_args, name, lineno)
+      begin
+        add(name, *args)
+      rescue UnknownPredicate, MalformedFact => e
+        raise e.class, "line #{lineno}: #{e.message}"
+      end
     end
 
     def parse_args(raw, name, lineno)
