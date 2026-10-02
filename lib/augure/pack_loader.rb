@@ -27,7 +27,7 @@ module Augure
       corpus["suites"].values.flatten.each do |entry|
         before = Pipeline.analyze(facts: entry["facts"], priors: base_priors, plan: false)
         after = Pipeline.analyze(facts: entry["facts"], priors: priors_with(packs, base_priors),
-                                 packs: packs, plan: false)
+          packs: packs, plan: false)
         # Additive packs may extend applicable/ranking with NEW techniques
         # below the documented top - what they must never do: (1) move an
         # EXISTING technique's order, (2) take the top-1 of a DOCUMENTED
