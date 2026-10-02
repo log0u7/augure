@@ -7,7 +7,7 @@ require "tmpdir"
 RSpec.describe "exe/augure" do
   let(:exe) { File.expand_path("../../exe/augure", __dir__) }
   let(:split_entry) do
-    corpus = JSON.parse(File.read(File.join(__dir__, "../fixtures/ctf_corpus.json")))
+    corpus = JSON.parse(File.read(File.join(__dir__, "../../lib/augure/ctf_corpus.json")))
     corpus["suites"]["ropemporium"].find { |e| e["name"] == "split" }
   end
 
@@ -43,7 +43,7 @@ RSpec.describe "exe/augure" do
   end
 
   it "smoke: reproduces the frozen corpus decision end to end" do
-    corpus = JSON.parse(File.read(File.join(__dir__, "../fixtures/ctf_corpus.json")))
+    corpus = JSON.parse(File.read(File.join(__dir__, "../../lib/augure/ctf_corpus.json")))
     corpus["suites"].values.flatten.each do |entry|
       stdout, _err, status = Open3.capture3(exe, "analyze", "-", "--json", stdin_data: entry["facts"])
       expect(status.exitstatus).to eq(0), "#{entry["suite"]}/#{entry["name"]} exit"

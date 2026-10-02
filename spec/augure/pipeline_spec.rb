@@ -49,7 +49,7 @@ RSpec.describe Augure::Pipeline do
 
   describe "CTF corpus smoke (selection parity)" do
     it "ranks the documented technique first on all 24 targets (deterministic)" do
-      corpus = JSON.parse(File.read(File.join(__dir__, "../fixtures/ctf_corpus.json")))
+      corpus = JSON.parse(File.read(File.join(__dir__, "../../lib/augure/ctf_corpus.json")))
       corpus["suites"].values.flatten.each do |entry|
         result = described_class.analyze(facts: entry["facts"])
         expect(result[:ranking].first).to eq(entry["selected"]),

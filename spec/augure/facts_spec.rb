@@ -78,7 +78,7 @@ RSpec.describe Augure::Facts do
     end
 
     it "parses the entire frozen CTF corpus" do
-      corpus = JSON.parse(File.read(File.join(__dir__, "../fixtures/ctf_corpus.json")))
+      corpus = JSON.parse(File.read(File.join(__dir__, "../../lib/augure/ctf_corpus.json")))
       entries = corpus["suites"].values.flatten
       expect(entries.size).to be_between(33, 40)
 

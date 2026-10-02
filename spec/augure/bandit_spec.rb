@@ -82,7 +82,7 @@ RSpec.describe Augure::Bandit do
 
   describe "CTF corpus conformance" do
     it "reproduces the frozen Python ranking and selection" do
-      corpus = JSON.parse(File.read(File.join(__dir__, "../fixtures/ctf_corpus.json")))
+      corpus = JSON.parse(File.read(File.join(__dir__, "../../lib/augure/ctf_corpus.json")))
       priors = corpus["meta"]["priors"]
 
       corpus["suites"].values.flatten.each do |entry|

@@ -73,7 +73,7 @@ RSpec.describe Augure::Mcts do
 
   describe "CTF corpus conformance" do
     it "reproduces the frozen Python first move and path" do
-      corpus = JSON.parse(File.read(File.join(__dir__, "../fixtures/ctf_corpus.json")))
+      corpus = JSON.parse(File.read(File.join(__dir__, "../../lib/augure/ctf_corpus.json")))
 
       corpus["mcts"].each do |entry|
         first, path = described_class.plan(entry["allowed"],

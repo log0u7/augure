@@ -32,7 +32,7 @@ jobs:
           ruby-version: "3.4"
           bundler-cache: true
       - name: CTF corpus concordance (34 targets, gate 100%)
-        run: bundle exec exe/augure-benchmark spec/fixtures/ctf_corpus.json
+        run: bundle exec exe/augure-benchmark lib/augure/ctf_corpus.json
 
   audit:
     runs-on: ubuntu-latest

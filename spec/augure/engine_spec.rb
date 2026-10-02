@@ -178,7 +178,7 @@ RSpec.describe Augure::Engine do
 
   describe "CTF corpus conformance" do
     it "reproduces the frozen Python applicable set byte-for-byte" do
-      corpus = JSON.parse(File.read(File.join(__dir__, "../fixtures/ctf_corpus.json")))
+      corpus = JSON.parse(File.read(File.join(__dir__, "../../lib/augure/ctf_corpus.json")))
       entries = corpus["suites"].values.flatten
 
       entries.each do |entry|

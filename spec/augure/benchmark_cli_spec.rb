@@ -6,7 +6,7 @@ require "tmpdir"
 
 RSpec.describe "exe/augure-benchmark" do
   let(:exe) { File.expand_path("../../exe/augure-benchmark", __dir__) }
-  let(:corpus) { File.expand_path("../fixtures/ctf_corpus.json", __dir__) }
+  let(:corpus) { File.expand_path("../../lib/augure/ctf_corpus.json", __dir__) }
 
   it "prints per-suite concordance and exits 0 at full concordance" do
     stdout, _err, status = Open3.capture3(exe, corpus)
