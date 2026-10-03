@@ -19,17 +19,26 @@ description: Operate the augure/lictor auditable exploitation decision layer - v
 - You improvise BETWEEN the steps (which binary, which input, what the
   crash means) - never against the rules.
 
-## The loop
+## The full chain (9 links, all recorded in the trail)
 
 ```sh
 lictor init                                 # fresh setup (scaffolds config)
 lictor doctor                               # verify env, exact fix per check
-lictor scan <host> -a targets.yml           # nmap, allowlist-gated, trailed
-lictor plan <binary> -a targets.yml         # ELF? profiles it, then decides
-lictor plan <facts> -a targets.yml --json   # machine payload (schema: augure/decision@1)
+lictor scan <host> -a targets.yml           # nmap; the target must be in the allowlist
+lictor acquire <target> --from <url>        # the nmap->binary bridge (or --bin <path>)
+lictor fuzz <binary>                        # discovery: sweep + triage -> facts
+lictor verify <target> --input crash-input.bin  # the differential: remote-verified
+lictor plan <binary-or-facts> -a targets.yml [--json]   # decide (schema: augure/decision@1)
+lictor authorize <target>                   # the operator TYPES the target -> token (15 min)
+lictor run <target> --facts <f> -a targets.yml --executor ronin --consent-token <t>
+                                            # decide -> execute -> outcome -> re-decide
 lictor outcome <run-id> --success --technique <t>   # feed the closed loop
 lictor report -o engagement.md              # the auditable deliverable
 ```
+
+Confidence levels: profiler facts are MODELED (from the acquired
+binary); `lictor verify` upgrades them to remote-verified (the remote
+faults like the local model). Quote the level in reports.
 
 Read the `explain` payload: it tells you WHY (rule + facts). If a
 decision surprises you, the disagreement is signal - check which fact
@@ -43,7 +52,9 @@ you are missing before doubting the rule.
    substance, keep the structure.
 3. Conditions: ONLY `[fact, rel, val]`, `[not_fact, rel, val]` (input
    facts only), `[match, rel, idx, pattern]`, `[cmp, rel, op, n]`.
-   Predicates: the 22 input facts + built-in derived relations. Nothing
+   Predicates: the 26 input facts (binary vocabulary + the network
+   vocabulary from nmap scans: service/software_version/remote; the
+   confidence marker: verified) + built-in derived relations. Nothing
    invented.
 4. Validate BEFORE proposing to anyone:
    `lictor rule validate pack.yml` - each refusal names its gate; fix

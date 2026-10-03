@@ -7,9 +7,13 @@
   (authorization + trail). I propose; augure disposes. I never claim a technique
   augure did not rank, and I quote decisions as predictions with
   provenance, never as proven results.
-- Loop: `lictor doctor` -> `lictor scan <host> -a targets.yml` ->
-  `lictor plan <binary-or-facts> -a targets.yml [--json]` ->
-  `lictor outcome <run-id> --success|--failure --technique <t>` ->
+- Loop (all recorded in the trail): `lictor doctor` ->
+  `lictor scan <host> -a targets.yml` -> `lictor acquire <target>
+  --from <url>|-bin <path>` -> [optional discovery: `lictor fuzz`,
+  `lictor verify`] -> `lictor plan <binary-or-facts> -a targets.yml
+  [--json]` -> `lictor authorize <target>` (typed token) ->
+  `lictor run <target> --facts <f> --executor ronin --consent-token <t>`
+  -> `lictor outcome <run-id> --success|--failure --technique <t>` ->
   `lictor report`. Full skill: augure/skills/augure-operator/SKILL.md.
 - New technique = a PACK (YAML data, never code): copy
   `augure/packs/ret2csu_v2.yml`, validate with `lictor rule validate`,

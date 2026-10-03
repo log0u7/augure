@@ -7,10 +7,10 @@ selection from Datalog facts; never executes anything.
 
 ## Commands
 
-- Test: `bundle exec rspec` (all green required, 85+ examples)
+- Test: `bundle exec rspec` (all green required, 125+ examples)
 - Lint: `bundle exec standardrb` (zero offenses required, `--fix` available)
 - Audit: `bundle exec bundler-audit`
-- CLI: `bundle exec ruby exe/augure analyze spec/fixtures/... --json`
+- CLI: `bundle exec ruby exe/augure analyze examples/ret2win.facts --json`
 
 ## Non-negotiable rules
 
@@ -20,7 +20,7 @@ selection from Datalog facts; never executes anything.
    Souffle) only via subprocess/HTTP boundaries.
 3. **Rules are data**: technique logic goes in `lib/augure/rules.rb` table,
    never in ad-hoc code. The corpus conformance spec
-   (`spec/fixtures/ctf_corpus.json`) is the contract: a rules change that
+   (`lib/augure/ctf_corpus.json`, shipped in the gem) is the contract: a rules change that
    moves a corpus verdict must update the corpus in the same commit and
    justify it.
 4. **Conventional Commits**, atomic, English: `feat(engine): ...`,

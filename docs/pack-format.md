@@ -45,20 +45,24 @@ priors: [14, 6]                  # Beta(alpha, beta): mean 0.7 here
 
 1. **Condition vocabulary**: only `fact`, `not_fact`, `match`, `cmp`.
    Anything else - including "clever" ones - is refused.
-2. **Existing predicates only**: your conditions may reference the 22
-   input facts (see `docs/reference.md#schema`) and the built-in derived
-   relations (`vuln`, `has_reg_control`, `has_write_primitive`,
-   `has_syscall_gadget`, `has_csu_gadget`, `has_pivot_gadget`,
-   `enough_gadgets`). You cannot invent a fact source.
+2. **Existing predicates only**: your conditions may reference the 26
+   input facts (see `docs/reference.md#schema` - the binary vocabulary:
+   nx/pie/canary/plt/gadget...; the network vocabulary, emitted from
+   nmap scans: service/software_version/remote; the confidence marker:
+   verified) and the built-in derived relations (`vuln`,
+   `has_reg_control`, `has_write_primitive`, `has_syscall_gadget`,
+   `has_csu_gadget`, `has_pivot_gadget`, `enough_gadgets`). You cannot
+   invent a fact source.
 3. **Stratification**: `not_fact` on input facts only.
 4. **New heads only**: your technique must be NEW. Overriding
    `ret2plt` or any built-in is refused - the corpus owns those verdicts.
 5. **Priors and rates in range**: priors are exactly `[alpha, beta]`
    numbers; success rates in `[0, 1]`.
 6. **Corpus guard**: with your pack loaded, all 34 frozen corpus
-   targets must keep their documented ranking. A pack that takes the
-   top-1 of a documented target is refused - claiming better on frozen
-   truth is a dev-time corpus update, not a runtime pack.
+   targets must keep their documented ranking (your technique may rank
+   BELOW the documented top). A pack that takes the top-1 of a
+   documented target is refused - claiming better on frozen truth is a
+   dev-time corpus update, not a runtime pack.
 
 ## The cycle
 

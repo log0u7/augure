@@ -1,6 +1,6 @@
 # Reference: fact format, rules table, API
 
-Version: augure 0.0.x.
+Version: augure 0.1.x.
 
 ## Fact format
 
@@ -59,6 +59,10 @@ vuln_hint("unsafe_func:gets").
 | `reloc_writable` | 1 | string | relocations writable (ret2dlresolve) |
 | `dt_lazy` | 1 | string | lazy binding in effect |
 | `limited_stack` | 1 | string | stack space constrains the chain |
+| `service` | 1 | string | remote service name (nmap: `ssh`, `http`...) |
+| `software_version` | 1 | string | remote product + version (from the scan) |
+| `remote` | 1 | string | the facts describe a remote service, not a local ELF |
+| `verified` | 1 | string | `"remote"` = validated by a differential probe: the remote faults like the local model |
 
 Defaults (closed world): absent `nx` = `"true"`, absent `pie` = `"true"`,
 absent `canary` = `"false"`.
@@ -136,8 +140,20 @@ stderr names the line).
 
 ### `Augure::Mcts`
 - `.plan(allowed, iterations: 2000, seed:) -> [first_move, path]`
+  (`model:` overrides the transition graph; technique packs merge into
+  it via `merged_model(packs)`)
 - `.available(caps, allowed)`, `.transition(caps, tech)`, `.terminal?(caps)`
 - `STAGE_MODEL` - the technique transition graph.
+
+### `Augure::Pack` / `PackLoader`
+- `Pack.load_file(path)` - validates a technique pack (YAML): schema,
+  existing predicates only, stratification, new heads only, mandatory
+  provenance (author + source).
+- `PackLoader.load_dir(dir) -> [Pack]`,
+  `.corpus_guard(packs)` - refuses any pack that reorders an existing
+  technique or takes a documented target's top-1.
+- Packs are data the consumer owns; the canonical example lives at
+  `packs/ret2csu_v2.yml` in the augure repo.
 
 ### `Augure::Verifier`
 - `.payload_fits(buffer_size:, payload_min:) -> :sat | :unsat`
@@ -149,8 +165,11 @@ stderr names the line).
 - `.solve(smt_text, solver:, timeout: 10) -> :sat | :unsat | :unknown`
 
 ### `Augure::Pipeline`
-- `.analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256) ->
-  {applicable:, verified:, ranking:, selected:, plan:, explain:}`
+- `.analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256,
+  packs: nil, plan: true) -> {applicable:, verified:, ranking:, selected:,
+  plan:, explain:}` - `packs:` merges technique packs (rules, priors,
+  MCTS transitions); `plan: false` skips the MCTS search (the corpus
+  guard uses it).
 
 ### Machine payload contract
 

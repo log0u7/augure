@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Technique packs: complete techniques as YAML data (rules, KB, MCTS
+  transitions, priors, mandatory provenance), validated by the armor
+  (constrained vocabulary, existing predicates only, stratification,
+  new heads only) and the corpus guard (a pack may not reorder an
+  existing technique or take a documented target's top-1).
+- The network fact vocabulary: service/software_version/remote emitted
+  from nmap scans; `verified("remote")` = the differential confidence
+  level (modeled-from-ELF vs remote-verified).
+- The profiler detects win/flag symbols (the target_function fact).
+- The shipped corpus (lib/augure/ctf_corpus.json) enables the corpus
+  guard at consumer runtime.
+- augure-mcp: the read-only MCP surface (analyze_target, list_rules,
+  explain_technique).
+
 ## [0.1.0] - 2026-10-02
 
 ### Added
