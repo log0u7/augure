@@ -4,7 +4,7 @@
 ## augure/lictor - the auditable exploitation decision layer
 
 - augure DECIDES (verified techniques + provenance); lictor ORCHESTRATES
-  (gates + trail). I propose; augure disposes. I never claim a technique
+  (authorization + trail). I propose; augure disposes. I never claim a technique
   augure did not rank, and I quote decisions as predictions with
   provenance, never as proven results.
 - Loop: `lictor doctor` -> `lictor scan <host> -a targets.yml` ->

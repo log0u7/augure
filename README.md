@@ -113,7 +113,7 @@ solvers, LLM providers) enters through a subprocess or HTTP boundary.
 
 ```mermaid
 graph LR
-    B["binary<br/>(Phase 3 profiler)"] --> F["Augure::Facts<br/>strict schema"]
+    B["binary<br/>(augure-profiler)"] --> F["Augure::Facts<br/>strict schema"]
     F --> E["Augure::Engine<br/>Datalog rules-as-data"]
     E --> V["Augure::Verifier<br/>arithmetic / SMT-LIB"]
     V --> B1["Augure::Bandit<br/>Beta posteriors"]
@@ -130,7 +130,7 @@ Augure's decision engine reproduces the frozen CTF benchmark corpus
 byte-for-byte - **34/34** technique classifications across ROP Emporium,
 Protostar, Phoenix and pwnable-style targets (14 distinct techniques),
 and 5/5 multi-step plans including an externally documented kernel chain.
-CI runs [`augure-benchmark`](docs/reference.md#cli) as a hard gate.
+CI runs [`augure-benchmark`](docs/reference.md#cli) and fails the build below 100%.
 
 Read that carefully: these are **predictions against frozen ground truth**,
 not field results. The success probabilities in the prior table are
@@ -147,24 +147,15 @@ audit begins with this sentence.
 
 | | LLM alone | Augure |
 |---|---|---|
-| recommends `ret2libc` with no libc | confidently | structurally impossible (rule-gated) |
+| recommends `ret2libc` with no libc | confidently | structurally impossible (a rule forbids it) |
 | explains *why* | plausible prose | rule ID + facts + checks + seeded draw |
 | reproducible | no | same seed, same decision |
 | terminates | usually | provably (Datalog) |
 | audit trail | chat log | machine-checkable provenance |
 
 They compose: an LLM proposes hypotheses, Augure disposes. That is the
-generate-then-verify pattern - and it is also exactly what `augure-mcp`
-exposes to agents (Phase 6, see the roadmap).
-
-## Roadmap
-
-- **Phase 2** - native Ruby profiler (metasm-based): binary in, facts out.
-- **Phase 3** - LLM feature extraction behind the fact-whitelist boundary
-  (Anthropic + OpenAI-compatible backends).
-- **Phase 5** - `lictor`: the authorized-ops companion (handoff mode first).
-- **Phase 6** - `augure-mcp`: read-only MCP server exposing `analyze_target`,
-  `list_rules`, `explain_technique` to LLM agents.
+generate-then-verify pattern - and `augure-mcp` (shipped, see below)
+exposes exactly that read-only surface to agents.
 
 ## Acceptable use
 
@@ -181,21 +172,10 @@ write-up. Use it for:
 Do not use it to attack systems you do not own or are not explicitly
 authorized to test.
 
-## The lineage
-
-Augure is generation 3 of a twenty-year lineage: a Perl + SWI-Prolog +
-genetic-algorithm decision layer (2007-2012), a Python neuro-symbolic
-prototype (`strategy-sim`, 2024-2026), and now a Ruby gem. The three
-generations share one conviction: **one of these systems is a clock, the
-other is a cat. Augure is the clock.**
-
-The full story - why facts/rules separation outlived every language
-migration - is in [the architecture explanation](docs/explanation-architecture.md).
-
 ## License
 
-MIT. The optional metasm-based profiler (Phase 2) depends on metasm, LGPL-2.1,
-used as an external library in the readline style.
+MIT. The `augure-profiler` gem depends on metasm, LGPL-2.1, used as an
+external library in the readline style.
 
 ## Documentation
 
@@ -203,7 +183,9 @@ used as an external library in the readline style.
 |---|---|
 | get my first decision in 10 minutes | [the tutorial](docs/tutorial.md) |
 | write my own technique rules | [rule-writing how-to](docs/how-to-write-rules.md) |
+| teach augure a technique (packs) | [the pack format](docs/pack-format.md) |
 | plug a real SMT solver | [solver how-to](docs/how-to-swap-solver.md) |
 | look up the fact format or API | [the reference](docs/reference.md) |
 | understand auditability (red/blue/purple) | [auditability](docs/auditability.md) |
 | understand why rules-as-data | [architecture](docs/explanation-architecture.md) |
+| brief an LLM agent on the pair | [the agent snippet](docs/agent-snippet.md) |

@@ -41,7 +41,7 @@ mcts:
 priors: [14, 6]                  # Beta(alpha, beta): mean 0.7 here
 ```
 
-## The 6 gates (in the order the loader runs them)
+## The 6 checks (in the order the loader runs them)
 
 1. **Condition vocabulary**: only `fact`, `not_fact`, `match`, `cmp`.
    Anything else - including "clever" ones - is refused.
@@ -77,7 +77,7 @@ Via an MCP agent: the `rule_install` tool requires a consent token
   substance, keep the structure.
 - `success_rate` and `priors` are authored numbers: ground them in the
   source you cite, and say so in the description if they are estimates.
-- If validation refuses you, read the refusal - each gate names its
+- If validation refuses you, read the refusal - each check names its
   reason. Fix the data; never look for a way around the armor.
 - One pack = one technique. Split OR-conditions into sibling rules
   sharing the head; the provenance then tells which reason fired.
