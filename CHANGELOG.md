@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Static parity on the real binaries: a CI job downloads the eight
+  sha256-pinned ROP Emporium x64 binaries, profiles binary + shipped
+  libraries, and asserts every statically-derivable corpus claim
+  (96 checked; write-up-only facts are reported as skipped, never
+  silently dropped). The profiler learned the mov [r14], r15 encoding,
+  and the corpus lost two copy-paste defects (a duplicated format1
+  entry, badchars claiming write4's mov-deref-write gadget).
+
 ### Fixed
 
 - The sub-gemspecs (augure-profiler, augure-mcp) declare relative

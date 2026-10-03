@@ -44,6 +44,9 @@ module BinaryBuilder
         mov %rdi, (%rax)
         ret
         nop
+        mov %r15, (%r14)
+        ret
+        nop
         syscall
         ret
         nop

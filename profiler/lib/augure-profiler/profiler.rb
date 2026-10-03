@@ -17,6 +17,7 @@ module AugureProfiler
       ["mov_deref_write", "48 89 38 c3"],   # mov [rax], rdi ; ret
       ["mov_deref_write", "48 89 30 c3"],   # mov [rax], rsi ; ret
       ["mov_deref_write", "48 89 10 c3"],   # mov [rax], rdx ; ret
+      ["mov_deref_write", "4d 89 3e c3"],   # mov [r14], r15 ; ret (ROP Emporium write4)
       ["xchg_rsp_rax", "48 94 c3"],         # xchg rsp, rax ; ret
       ["syscall_ret", "0f 05 c3"],          # syscall ; ret
       ["int80_ret", "cd 80 c3"],            # int 0x80 ; ret

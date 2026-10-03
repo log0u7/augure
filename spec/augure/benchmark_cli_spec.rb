@@ -11,7 +11,7 @@ RSpec.describe "exe/augure-benchmark" do
   it "prints per-suite concordance and exits 0 at full concordance" do
     stdout, _err, status = Open3.capture3(exe, corpus)
     expect(status.exitstatus).to eq(0)
-    expect(stdout).to include("Top-1 concordance: 34/34")
+    expect(stdout).to include("Top-1 concordance: 33/33")
     expect(stdout).to match(/ropemporium\s+8\/8/)
     expect(stdout).to match(/phoenix\s+8\/8/)
   end

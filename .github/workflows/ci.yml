@@ -23,6 +23,17 @@ jobs:
       - name: Tests
         run: bundle exec rspec
 
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Static parity on the real ROP Emporium binaries (sha256-pinned)
+        run: bundle exec ruby tools/parity_check.rb
+
   concordance:
     runs-on: ubuntu-latest
     steps:
@@ -31,7 +42,7 @@ jobs:
         with:
           ruby-version: "3.4"
           bundler-cache: true
-      - name: CTF corpus concordance (34 targets, gate 100%)
+      - name: CTF corpus concordance (33 targets, gate 100%)
         run: bundle exec exe/augure-benchmark lib/augure/ctf_corpus.json
 
   audit:
