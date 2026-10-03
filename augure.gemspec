@@ -20,9 +20,8 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
-  spec.metadata["rubygems_mfa_required"] = "true"
 
-  spec.files = Dir.glob("lib/**/*.rb") + Dir.glob("lib/**/*.json") + ["LICENSE", "README.md"]
+  spec.files = Dir.glob(File.expand_path("lib", __dir__) + "/**/*.rb") + Dir.glob(File.expand_path("lib", __dir__) + "/**/*.json") + ["LICENSE", "README.md"] + [File.expand_path("exe/augure", __dir__)]
   spec.bindir = "exe"
   spec.executables = ["augure"]
   spec.require_paths = ["lib"]

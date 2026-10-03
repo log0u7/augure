@@ -1,5 +1,7 @@
 # augure
 
+![augure - the augur reads the birds: facts converge, the verdict is a star](docs/art/augure-v1.png)
+
 **The auditable exploitation decision layer.**
 
 > *Augur (n.): a Roman official who read the signs, announced the strategy,

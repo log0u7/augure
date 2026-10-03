@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "lib/augure-mcp/version"
+
 Gem::Specification.new do |spec|
   spec.name = "augure-mcp"
-  spec.version = "0.1.0"
+  spec.version = AugureMcp::VERSION
   spec.authors = ["Gregory Epp"]
   spec.email = ["log0u7@users.noreply.github.com"]
   spec.license = "MIT"
@@ -16,12 +18,11 @@ Gem::Specification.new do |spec|
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
-  spec.metadata["rubygems_mfa_required"] = "true"
 
-  spec.files = Dir.glob("lib/**/*.rb")
-  spec.bindir = "exe"
+  spec.files = Dir.glob(File.expand_path("lib", __dir__) + "/**/*.rb") + [File.expand_path("exe/augure-mcp", __dir__)]
+  spec.bindir = File.expand_path("exe", __dir__)
   spec.executables = ["augure-mcp"]
-  spec.require_paths = ["lib"]
+  spec.require_paths = [File.expand_path("lib", __dir__)]
 
   spec.add_dependency "augure", "~> 0.1"
   spec.add_dependency "mcp", "~> 1.6"

@@ -1,0 +1,26 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  push-gems:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - name: Build the three gems
+        run: |
+          gem build augure.gemspec
+          gem build profiler/augure-profiler.gemspec
+          gem build mcp_server/augure-mcp.gemspec
+      - name: Push to rubygems.org (scoped key, secrets never logged)
+        env:
+          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          gem push augure-*.gem --key RUBYGEMS_API_KEY --host https://rubygems.org
+          gem push augure-profiler-*.gem --key RUBYGEMS_API_KEY --host https://rubygems.org
+          gem push augure-mcp-*.gem --key RUBYGEMS_API_KEY --host https://rubygems.org
