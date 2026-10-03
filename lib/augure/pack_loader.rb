@@ -46,12 +46,15 @@ module Augure
       packs
     end
 
+    # Pack priors fill the gaps: a taught technique starts on its
+    # authored prior, but a base table entry (outcome-adapted or
+    # consumer-provided) always wins - the loop stays able to learn.
     def priors_with(packs, base)
       return base if packs.nil? || packs.empty?
 
       merged = base.transform_values(&:dup)
       packs.each do |pack|
-        merged[pack.technique] = pack.priors.dup
+        merged[pack.technique] = pack.priors.dup unless merged.key?(pack.technique)
       end
       merged
     end

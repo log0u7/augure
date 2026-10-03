@@ -58,7 +58,7 @@ priors: [14, 6]                  # Beta(alpha, beta): mean 0.7 here
    `ret2plt` or any built-in is refused - the corpus owns those verdicts.
 5. **Priors and rates in range**: priors are exactly `[alpha, beta]`
    numbers; success rates in `[0, 1]`.
-6. **Corpus guard**: with your pack loaded, all 34 frozen corpus
+6. **Corpus guard**: with your pack loaded, all 33 frozen corpus
    targets must keep their documented ranking (your technique may rank
    BELOW the documented top). A pack that takes the top-1 of a
    documented target is refused - claiming better on frozen truth is a

@@ -26,7 +26,7 @@ module Augure
     def analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256, packs: nil, plan: true)
       facts = Facts.parse(facts) if facts.is_a?(String)
       engine_rules = packs ? Rules.all + packs.flat_map(&:rules) : Rules.all
-      effective_priors = priors || PackLoader.priors_with(packs, default_priors)
+      effective_priors = PackLoader.priors_with(packs, priors || default_priors)
       engine_result = Engine.new(facts, rules: engine_rules).run
       applicable = engine_result.applicable
 

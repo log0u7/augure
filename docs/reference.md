@@ -102,7 +102,7 @@ Derived relations: `vuln` (from hints), `has_reg_control`,
 ## CLI
 
 ```
-augure analyze <facts-file | -> [--json] [--seed N]
+augure analyze <facts-file | -> [--json] [--seed N] [--packs DIR]
 ```
 
 | Flag | Effect |
@@ -183,8 +183,22 @@ schema tag:
 Consumers (CI, agents, the MCP server) pin `augure/decision@1`; a
 breaking change bumps the tag and is documented in the CHANGELOG.
 
+### Taught technique packs
+
+The shipped packs extend the rule table as data (`packs/`, loaded with
+`augure analyze --packs DIR` or taught to lictor with
+`lictor rule install`): `house_force`, `house_orange`, `house_botcake`,
+`unsorted_bin_attack`, `fastbin_hook`, `ret2dlresolve_x86`,
+`got_partial_overwrite`, `brop` (the first rule that consumes
+`verified("remote")` - an observation anchors it), `ret2partial_overwrite`,
+`one_gadget` - plus the canonical `ret2csu_v2` example. Each carries its
+rules, knowledge-base entries, MCTS transition and Beta priors, with the
+author and source as provenance. Pack priors fill the gaps of the prior
+table; a consumer-provided or outcome-adapted entry always wins.
+
 ### `Augure::KnowledgeBase`
-- `.corpus -> [entry]` (17 documented patterns)
+- `.corpus -> [entry]` (22 documented patterns)
+- `.corpus_with(extra) -> [entry]` (seed corpus + technique-pack knowledge)
 - `.priors -> {"tech" => [alpha, beta]}` (N=10 pseudo-counts)
 - `.transitions -> {"tech" => [unlock, ...]}`
 - `#query(text, technique: nil, n_results: 3) -> [{doc:, score:}]`

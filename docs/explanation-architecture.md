@@ -55,10 +55,6 @@ as a diagram.
    what it unlocks, which no flat weight can express. The STAGE_MODEL is a
    transition table - data again, so the planner stays inspectable.
 
-The progression mirrors the published articles: the engine is the decision
-layer, the planner is article 3, and the corpus is what keeps all of it
-honest.
-
 ## Subprocesses are the API policy
 
 Soufflé, SMT solvers, LLM providers: every external capability enters

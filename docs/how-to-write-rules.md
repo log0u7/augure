@@ -67,5 +67,5 @@ the audit payload - it is automatic, you earned it by using the table.
 - **Defaults are closed-world.** Absent `nx` means `nx("true")` - document
   any rule that depends on absence.
 - **The corpus is the contract.** A rules commit that moves a corpus verdict
-  must update `spec/fixtures/ctf_corpus.json` in the same commit and justify
+  must update `lib/augure/ctf_corpus.json` in the same commit and justify
   the move in the message.

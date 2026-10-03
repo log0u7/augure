@@ -129,8 +129,9 @@ graph LR
 ## Honest numbers
 
 Augure's decision engine reproduces the frozen CTF benchmark corpus
-byte-for-byte - **34/34** technique classifications across ROP Emporium,
-Protostar, Phoenix and pwnable-style targets (14 distinct techniques),
+byte-for-byte - **33/33** technique classifications across ROP Emporium,
+Protostar, Phoenix and pwnable-style targets (14 built-in techniques plus
+the taught technique packs),
 and 5/5 multi-step plans including an externally documented kernel chain.
 CI runs [`augure-benchmark`](docs/reference.md#cli) and fails the build below 100%.
 
@@ -141,7 +142,7 @@ audit begins with this sentence.
 
 | Claim | Evidence |
 |---|---|
-| 24/24 classification parity | `spec/fixtures/ctf_corpus.json`, `spec/augure/engine_spec.rb` |
+| 33/33 classification parity | `lib/augure/ctf_corpus.json`, `spec/augure/engine_spec.rb` |
 | 5/5 plan parity (incl. PinTheft kernel chain) | `spec/augure/mcts_spec.rb` |
 | Ruby engine == frozen Python engine | corpus conformance specs, CI-enforced |
 

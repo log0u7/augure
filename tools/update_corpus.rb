@@ -13,7 +13,7 @@
 require "json"
 require_relative "../lib/augure"
 
-CORPUS = File.expand_path("../spec/fixtures/ctf_corpus.json", __dir__)
+CORPUS = File.expand_path("../lib/augure/ctf_corpus.json", __dir__)
 
 corpus = JSON.parse(File.read(CORPUS))
 before = JSON.parse(corpus.to_json) # deep copy for the regression assert

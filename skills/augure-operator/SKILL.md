@@ -1,6 +1,6 @@
 ---
 name: augure-operator
-description: Operate the augure/lictor auditable exploitation decision layer - verify environments, decide techniques on fact files, run gated scans, record outcomes, write validated technique packs. Use when the user says augure, lictor, "which technique on this target", technique pack, or asks to analyze a binary/CTF target with an auditable decision layer.
+description: Operate the augure/lictor auditable exploitation decision layer - verify environments, decide techniques on fact files, run allowlist-checked scans, record outcomes, write validated technique packs. Use when the user says augure, lictor, "which technique on this target", technique pack, or asks to analyze a binary/CTF target with an auditable decision layer.
 ---
 
 # Operating augure + lictor
@@ -12,14 +12,14 @@ description: Operate the augure/lictor auditable exploitation decision layer - v
   applicable/verified - that is the point. Never claim a technique
   augure did not select.
 - **lictor executes the logistics**: scans, profiling, recipes, the
-  trail. Its gates (allowlist + consent tokens) are the law; work
+  trail. The allowlist and the consent tokens are the law; work
   around them and you are out.
 - **Decisions are predictions with provenance** (rule ID + evidence +
   seed). Quote them as such - never as field-proven results.
 - You improvise BETWEEN the steps (which binary, which input, what the
   crash means) - never against the rules.
 
-## The full chain (9 links, all recorded in the trail)
+## The full chain (12 steps, all recorded in the trail)
 
 ```sh
 lictor init                                 # fresh setup (scaffolds config)
@@ -28,6 +28,7 @@ lictor scan <host> -a targets.yml           # nmap; the target must be in the al
 lictor acquire <target> --from <url>        # the nmap->binary bridge (or --bin <path>)
 lictor fuzz <binary>                        # discovery: sweep + triage -> facts
 lictor verify <target> --input crash-input.bin  # the differential: remote-verified
+lictor suggest <facts> "plt(\"system\")."    # propose observations, augure re-decides (delta back)
 lictor plan <binary-or-facts> -a targets.yml [--json]   # decide (schema: augure/decision@1)
 lictor authorize <target>                   # the operator TYPES the target -> token (15 min)
 lictor run <target> --facts <f> -a targets.yml --executor ronin --consent-token <t>
@@ -46,8 +47,8 @@ you are missing before doubting the rule.
 
 ## Writing a technique pack (teaching augure)
 
-1. Read `docs/pack-format.md` in the augure repo (the format, the 6
-   validation gates).
+1. Read `docs/pack-format.md` in the augure repo (the format, the
+   6 armor checks).
 2. Copy `packs/ret2csu_v2.yml` (the canonical example) - change the
    substance, keep the structure.
 3. Conditions: ONLY `[fact, rel, val]`, `[not_fact, rel, val]` (input
@@ -57,8 +58,8 @@ you are missing before doubting the rule.
    confidence marker: verified) + built-in derived relations. Nothing
    invented.
 4. Validate BEFORE proposing to anyone:
-   `lictor rule validate pack.yml` - each refusal names its gate; fix
-   the data, never bypass the armor.
+   `lictor rule validate pack.yml` - each refusal names the
+   check that failed; fix the data, never bypass the armor.
 5. Install only with explicit operator confirmation (interactive or
    consent token). Rules change every future decision - that is why.
 

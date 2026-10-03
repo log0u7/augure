@@ -10,8 +10,9 @@
 - Loop (all recorded in the trail): `lictor doctor` ->
   `lictor scan <host> -a targets.yml` -> `lictor acquire <target>
   --from <url>|-bin <path>` -> [optional discovery: `lictor fuzz`,
-  `lictor verify`] -> `lictor plan <binary-or-facts> -a targets.yml
-  [--json]` -> `lictor authorize <target>` (typed token) ->
+  `lictor verify`] -> `lictor suggest <facts> "plt(\"system\")."`
+  (propose observations; the delta comes back) -> `lictor plan
+  <binary-or-facts> -a targets.yml [--json]` -> `lictor authorize <target>` (typed token) ->
   `lictor run <target> --facts <f> --executor ronin --consent-token <t>`
   -> `lictor outcome <run-id> --success|--failure --technique <t>` ->
   `lictor report`. Full skill: augure/skills/augure-operator/SKILL.md.
