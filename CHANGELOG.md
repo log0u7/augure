@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The sub-gemspecs (augure-profiler, augure-mcp) declare relative
+  `bindir`/`require_paths` again: absolute values break RubyGems
+  `full_require_paths` (the require path gets joined against the gem
+  dir), so the gems were unrequirable in CI and in the `augure-profile`
+  subprocess. The `files` globs stay anchored to `__dir__` so a gem
+  builds identically from any working directory.
+
 ### Added
 
 - Technique packs: complete techniques as YAML data (rules, KB, MCTS

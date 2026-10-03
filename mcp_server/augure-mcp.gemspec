@@ -20,9 +20,9 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
 
   spec.files = Dir.glob(File.expand_path("lib", __dir__) + "/**/*.rb") + [File.expand_path("exe/augure-mcp", __dir__)]
-  spec.bindir = File.expand_path("exe", __dir__)
+  spec.bindir = "exe"
   spec.executables = ["augure-mcp"]
-  spec.require_paths = [File.expand_path("lib", __dir__)]
+  spec.require_paths = ["lib"]
 
   spec.add_dependency "augure", "~> 0.1"
   spec.add_dependency "mcp", "~> 1.6"
