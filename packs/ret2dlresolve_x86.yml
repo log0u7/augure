@@ -1,0 +1,31 @@
+technique: ret2dlresolve_x86
+author: Gregory Epp
+source: https://ropemporium.com/challenge/ret2dlresolve.html
+
+rules:
+  - id: app_ret2dlresolve_x86
+    head: [applicable, ret2dlresolve_x86]
+    conditions:
+      - [fact, dt_lazy, true]
+      - [fact, reloc_writable, true]
+      - [fact, pie, false]
+
+kb:
+  - id: ret2dlresolve_x86_001
+    technique: ret2dlresolve_x86
+    description: >
+      The 32-bit flavor of lazy-binding abuse: forge a fake
+      Rel/Sym/string triple at a known address and let _dl_runtime_resolve
+      fetch system() out of thin air. No leak, no libc needed - the
+      index arithmetic is the whole craft.
+    chain: [fake_reloc, fake_sym, resolve_system]
+    unlocks: [shell]
+    success_rate: 0.45
+
+mcts:
+  requires: []
+  provides: [shell]
+  terminal: true
+  success: 0.45
+
+priors: [8, 12]

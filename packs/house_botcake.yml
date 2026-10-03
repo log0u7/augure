@@ -1,0 +1,30 @@
+technique: house_botcake
+author: Gregory Epp
+source: https://github.com/shellphint/how2heap (house_of_botcake)
+
+rules:
+  - id: app_house_botcake
+    head: [applicable, house_botcake]
+    conditions:
+      - [fact, vuln, heap]
+      - [fact, allocator, tcache]
+      - [cmp, glibc_minor, ge, 29]
+
+kb:
+  - id: house_botcake_001
+    technique: house_botcake
+    description: >
+      Tcache-era consolidation overlap: fill the tcache, force a
+      consolidated chunk into the unsorted bin, double-take it through
+      the tcache. The modern answer to double-free after the tcache key.
+    chain: [tcache_fill, consolidate, double_take]
+    unlocks: [arb_write]
+    success_rate: 0.45
+
+mcts:
+  requires: []
+  provides: [arb_write]
+  terminal: true
+  success: 0.45
+
+priors: [8, 12]

@@ -1,0 +1,29 @@
+technique: house_force
+author: Gregory Epp
+source: https://github.com/shellphint/how2heap (house_of_force)
+
+rules:
+  - id: app_house_force
+    head: [applicable, house_force]
+    conditions:
+      - [fact, vuln, heap]
+      - [fact, allocator, dlmalloc]
+
+kb:
+  - id: house_force_001
+    technique: house_force
+    description: >
+      Overwrite the top chunk size with a huge value; the next malloc
+      returns a chunk overlapping any address. Killed by the top-chunk
+      sanity check in glibc 2.29; dlmalloc-era targets only.
+    chain: [top_size_overwrite, next_malloc_overlap, fnptr_takeover]
+    unlocks: [arb_write]
+    success_rate: 0.35
+
+mcts:
+  requires: []
+  provides: [arb_write]
+  terminal: true
+  success: 0.35
+
+priors: [8, 12]

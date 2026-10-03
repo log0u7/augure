@@ -18,6 +18,13 @@ module Augure
       @corpus ||= JSON.parse(File.read(CORPUS_PATH)).freeze
     end
 
+    # The seed corpus extended with knowledge from loaded technique
+    # packs - entries carry the same shape, so retrieval, priors and
+    # explain see pack techniques like built-in ones.
+    def self.corpus_with(extra)
+      (corpus + extra.to_a).freeze
+    end
+
     def self.priors
       accum = Hash.new { |h, k| h[k] = [0.0, 0.0] }
       corpus.each do |entry|
@@ -42,8 +49,8 @@ module Augure
 
     attr_reader :size
 
-    def initialize
-      @corpus = self.class.corpus
+    def initialize(extra: [])
+      @corpus = extra.empty? ? self.class.corpus : self.class.corpus_with(extra)
       @size = @corpus.size
       build_index
     end

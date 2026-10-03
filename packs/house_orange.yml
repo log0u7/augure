@@ -1,0 +1,30 @@
+technique: house_orange
+author: Gregory Epp
+source: https://github.com/shellphint/how2heap (house_of_orange)
+
+rules:
+  - id: app_house_orange
+    head: [applicable, house_orange]
+    conditions:
+      - [fact, vuln, heap]
+      - [fact, function_pointer_on_heap, true]
+      - [cmp, glibc_minor, lt, 26]
+
+kb:
+  - id: house_orange_001
+    technique: house_orange
+    description: >
+      No free needed: shrink the top chunk through a heap extension,
+      free it into the unsorted bin, then forge the _IO_list_all path
+      to a fake FILE structure. Dead above glibc 2.25 (vtable checks).
+    chain: [top_extend, unsorted_free, file_struct_forge]
+    unlocks: [arb_write]
+    success_rate: 0.30
+
+mcts:
+  requires: []
+  provides: [arb_write]
+  terminal: true
+  success: 0.30
+
+priors: [7, 13]

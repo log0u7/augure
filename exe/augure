@@ -24,6 +24,7 @@ parser = OptionParser.new do |opts|
   USAGE
   opts.on("-j", "--json", "Emit the decision as JSON (schema: augure/decision@1)") { options[:json] = true }
   opts.on("-s", "--seed N", Integer, "Seed for deterministic bandit/MCTS") { |n| options[:seed] = n }
+  opts.on("--packs DIR", "Load technique packs (armor + corpus guard) for analyze/explain") { |v| options[:packs] = v }
   opts.on("--version", "Print the version") do
     puts VERSION_LINE
     exit 0
@@ -87,8 +88,11 @@ when "rules"
   end
 when "explain"
   technique = ARGV.shift or abort(parser.to_s)
-  rules = Augure::Rules.all.select { |r| r.head == [Augure::Rules::APPLICABLE, technique] }
-  entries = Augure::KnowledgeBase.corpus.select { |e| e["technique"] == technique }
+  packs = options[:packs] && Augure::PackLoader.load_dir(options[:packs]).tap { |ps| Augure::PackLoader.corpus_guard(ps) }
+  rules = Augure::Rules.all + packs.to_a.flat_map(&:rules)
+  rules = rules.select { |r| r.head == [Augure::Rules::APPLICABLE, technique] }
+  entries = Augure::KnowledgeBase.corpus_with(packs.to_a.flat_map(&:kb))
+    .select { |e| e["technique"] == technique }
   if rules.empty? && entries.empty?
     known = Augure::Rules.applicable_rules.map { |r| r.head[1] }.uniq.sort
     abort("augure: unknown technique '#{technique}' - known: #{known.join(", ")}")
@@ -105,7 +109,8 @@ when "analyze"
   path = ARGV.shift or abort(parser.to_s)
   input = (path == "-") ? $stdin.read : File.read(path)
   begin
-    result = Augure::Pipeline.analyze(facts: input, seed: options[:seed])
+    packs = options[:packs] && Augure::PackLoader.load_dir(options[:packs]).tap { |ps| Augure::PackLoader.corpus_guard(ps) }
+    result = Augure::Pipeline.analyze(facts: input, seed: options[:seed], packs: packs)
     if options[:json]
       puts JSON.pretty_generate({schema: "augure/decision@1"}.merge(result))
     else

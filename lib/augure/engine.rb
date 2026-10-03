@@ -94,7 +94,7 @@ module Augure
           .map { |t| [cond[1], *t] }
       when :cmp
         tuples_for(rels, cond[1])
-          .select { |t| t[0].is_a?(Integer) && t[0].public_send(OP.fetch(cond[2]), cond[3]) }
+          .select { |t| t[0].is_a?(Integer) && t[0].public_send(OP.fetch(cond[2].to_sym), cond[3]) }
           .map { |t| [cond[1], *t] }
       else
         raise EngineError, "unknown condition #{cond[0].inspect}"

@@ -138,7 +138,15 @@ module Augure
 
     def build
       @rules = @data["rules"].map do |rule|
-        conditions = rule["conditions"].map { |cond| [cond[0].to_sym, *cond[1..]] }
+        conditions = rule["conditions"].map do |cond|
+          normalized = cond.map do |v|
+            if v == true then "true"
+            elsif v == false then "false"
+            else v
+            end
+          end
+          [normalized[0].to_sym, *normalized[1..]]
+        end
         Rules::Rule.new(
           id: rule["id"].to_sym, head: rule["head"], conditions: conditions,
           source: "#{@data["source"]} (pack #{@technique} by #{@author})", origin: @technique

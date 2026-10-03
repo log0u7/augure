@@ -1,0 +1,30 @@
+technique: one_gadget
+author: Gregory Epp
+source: https://github.com/david942j/one_gadget
+
+rules:
+  - id: app_one_gadget
+    head: [applicable, one_gadget]
+    conditions:
+      - [fact, libc_present, true]
+      - [fact, nx, true]
+
+kb:
+  - id: one_gadget_001
+    technique: one_gadget
+    description: >
+      A single libc address that execs /bin/sh when its register
+      constraints hold at the call site. Cheaper than a chain once the
+      base is known - the constraints (rsp alignment, null registers)
+      are the whole gamble.
+    chain: [constraint_check, base_apply, exec_sh]
+    unlocks: [shell]
+    success_rate: 0.50
+
+mcts:
+  requires: [libc_base]
+  provides: [shell]
+  terminal: true
+  success: 0.50
+
+priors: [5, 15]

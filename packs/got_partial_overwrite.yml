@@ -1,0 +1,30 @@
+technique: got_partial_overwrite
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/io-file/got-hijack/
+
+rules:
+  - id: app_got_partial_overwrite
+    head: [applicable, got_partial_overwrite]
+    conditions:
+      - [fact, relro, partial]
+      - [fact, got_overwrite_target, true]
+
+kb:
+  - id: got_partial_overwrite_001
+    technique: got_partial_overwrite
+    description: >
+      Partial RELRO leaves the GOT writable: overwrite only the low
+      bytes of a resolved entry so the imported function lands on a
+      nearby win path. Two bytes beat a leak when PIE keeps the page
+      fixed.
+    chain: [low_bytes_overwrite, reimport_call]
+    unlocks: [shell]
+    success_rate: 0.50
+
+mcts:
+  requires: []
+  provides: [shell]
+  terminal: true
+  success: 0.50
+
+priors: [8, 12]

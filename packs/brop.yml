@@ -1,0 +1,31 @@
+technique: brop
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/stackoverflow/x86/advanced-rop/brop/
+
+rules:
+  - id: app_brop
+    head: [applicable, brop]
+    conditions:
+      - [fact, remote, true]
+      - [fact, verified, remote]
+      - [fact, nx, true]
+
+kb:
+  - id: brop_001
+    technique: brop
+    description: >
+      Blind ROP: no binary, only a remote oracle that faults. The crash
+      differential (the verified fact) anchors the model; stop-gadget
+      hunting and a BROP gadget leak enough libc to call system.
+      First rule that consumes a verified observation, not a modeled one.
+    chain: [stop_gadget, brop_gadget, dump_libc, system_call]
+    unlocks: [libc_base]
+    success_rate: 0.30
+
+mcts:
+  requires: []
+  provides: [libc_base]
+  terminal: false
+  success: 0.30
+
+priors: [6, 14]

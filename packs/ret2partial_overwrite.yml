@@ -1,0 +1,30 @@
+technique: ret2partial_overwrite
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/stackoverflow/x86/partial-overwrite/
+
+rules:
+  - id: app_ret2partial_overwrite
+    head: [applicable, ret2partial_overwrite]
+    conditions:
+      - [fact, pie, true]
+      - [fact, vuln, sof]
+      - [fact, canary, false]
+
+kb:
+  - id: ret2partial_overwrite_001
+    technique: ret2partial_overwrite
+    description: >
+      PIE randomizes pages, not the low 12 bits: overwrite only the
+      saved return address's low bytes to hop onto a nearby gadget or
+      function. No leak needed when the canary is absent.
+    chain: [low_bytes_ret_overwrite, page_hop]
+    unlocks: [reg_control]
+    success_rate: 0.40
+
+mcts:
+  requires: []
+  provides: [reg_control]
+  terminal: true
+  success: 0.40
+
+priors: [8, 12]

@@ -190,3 +190,13 @@ RSpec.describe Augure::Engine do
     end
   end
 end
+
+RSpec.describe "cmp conditions from data (packs)" do
+  it "accepts string comparison ops - YAML carries strings, not symbols" do
+    facts = Augure::Facts.parse("glibc_minor(31).\n")
+    rule = Augure::Rules::Rule.new("spec_cmp", [:x, :ok],
+      [[:cmp, "glibc_minor", "ge", 29]], "spec", nil)
+    result = Augure::Engine.new(facts, rules: [rule]).run
+    expect(result.derived_rels[:x]).to eq([[:ok]])
+  end
+end

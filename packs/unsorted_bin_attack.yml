@@ -1,0 +1,30 @@
+technique: unsorted_bin_attack
+author: Gregory Epp
+source: https://github.com/shellphint/how2heap (unsorted_bin_attack)
+
+rules:
+  - id: app_unsorted_bin_attack
+    head: [applicable, unsorted_bin_attack]
+    conditions:
+      - [fact, vuln, heap]
+      - [fact, function_pointer_on_heap, true]
+      - [cmp, glibc_minor, lt, 26]
+
+kb:
+  - id: unsorted_bin_attack_001
+    technique: unsorted_bin_attack
+    description: >
+      Write the unsorted-bin head (a libc address) over an arbitrary
+      word via a forged bk on free. One write, unknown value - enough
+      for a global variable that gates a win path. Patched 2.26+.
+    chain: [forged_bk, unsorted_removal_write]
+    unlocks: [arb_write]
+    success_rate: 0.35
+
+mcts:
+  requires: []
+  provides: [arb_write]
+  terminal: true
+  success: 0.35
+
+priors: [7, 13]

@@ -1,0 +1,30 @@
+technique: fastbin_hook
+author: Gregory Epp
+source: https://github.com/shellphint/how2heap (fastbin dup into hooks)
+
+rules:
+  - id: app_fastbin_hook
+    head: [applicable, fastbin_hook]
+    conditions:
+      - [fact, vuln, heap]
+      - [fact, allocator, tcache]
+      - [cmp, glibc_minor, lt, 34]
+
+kb:
+  - id: fastbin_hook_001
+    technique: fastbin_hook
+    description: >
+      Fastbin dup with a forged fd pointing near __malloc_hook /
+      __free_hook (size-aligned); the next malloc of that bin returns
+      the hook. __free_hook died in glibc 2.34.
+    chain: [fastbin_dup, fd_forge, hook_alloc]
+    unlocks: [arb_write]
+    success_rate: 0.40
+
+mcts:
+  requires: []
+  provides: [arb_write]
+  terminal: true
+  success: 0.40
+
+priors: [8, 12]
