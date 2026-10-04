@@ -113,3 +113,24 @@ RSpec.describe "the parametrized stubs" do
     }.to raise_error(ArgumentError, /path/)
   end
 end
+
+RSpec.describe "the ghost-writing pools" do
+  let(:runner) do
+    exe = File.join(Dir.mktmpdir, "sc_runner4")
+    src = File.expand_path("support/sc_runner.c", __dir__)
+    _, err, status = Open3.capture3("gcc", "-o", exe, src)
+    raise "sc_runner build failed: #{err}" unless status.success?
+
+    exe
+  end
+
+  it "ten seeds, ten living stubs, deterministic per seed" do
+    forms = (1..10).map { |seed| described_class.generate(Metasm::X64, :sh, rng: Random.new(seed)) }
+    again = (1..10).map { |seed| described_class.generate(Metasm::X64, :sh, rng: Random.new(seed)) }
+    expect(forms).to eq(again) # the audit reproduces the exact payload
+    forms.each_with_index do |stub, i|
+      _out, err, status = Open3.capture3(runner, stdin_data: stub + "\nexit\n")
+      expect(status.to_s).to match(/exit 0/), "seed #{i + 1} died: #{err[0, 100]}"
+    end
+  end
+end
