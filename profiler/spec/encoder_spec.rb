@@ -23,7 +23,7 @@ RSpec.describe AugureProfiler::Encoder do
 
   it "the xor encoder crosses the channel and runs" do
     e = described_class.encode(inner, badchars: badchars, arch: :x64)
-    expect((e[:bytes].unpack("C*") & badchars)).to be_empty
+    expect(e[:bytes].unpack("C*") & badchars).to be_empty
     out, _err, status = Open3.capture3(runner, stdin_data: e[:bytes])
     expect(out).to include("FLAG{orw_works}")
     expect(status.to_s).to match(/exit 0/)
@@ -33,7 +33,7 @@ RSpec.describe AugureProfiler::Encoder do
     a = described_class.encode_polymorphic(inner, badchars: badchars, rng: Random.new(3), arch: :x64)
     b = described_class.encode_polymorphic(inner, badchars: badchars, rng: Random.new(3), arch: :x64)
     expect(a[:bytes]).to eq(b[:bytes])
-    expect((a[:bytes].unpack("C*") & badchars)).to be_empty
+    expect(a[:bytes].unpack("C*") & badchars).to be_empty
     out, _err, status = Open3.capture3(runner, stdin_data: a[:bytes])
     expect(out).to include("FLAG{orw_works}")
     expect(status.to_s).to match(/exit 0/)
