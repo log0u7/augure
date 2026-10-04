@@ -92,7 +92,7 @@ module AugureProfiler
     end
 
     def arch_index
-      @elf.header.e_class.to_s == "64" ? 0 : 1
+      (@elf.header.e_class.to_s == "64") ? 0 : 1
     end
 
     def plt_symbol?(name)
