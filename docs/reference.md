@@ -169,7 +169,7 @@ stderr names the line).
 - `.solve(smt_text, solver:, timeout: 10) -> :sat | :unsat | :unknown`
 
 ### `Augure::Pipeline`
-- `.analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256,
+- `.analyze(facts:, seed: nil, priors: nil, buffer_size: 256,
   packs: nil, plan: true) -> {applicable:, verified:, ranking:, selected:,
   plan:, explain:}` - `packs:` merges technique packs (rules, priors,
   MCTS transitions); `plan: false` skips the MCTS search (the corpus

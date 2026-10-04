@@ -11,6 +11,15 @@ RSpec.describe Augure::Pipeline do
   end
 
   describe ".analyze" do
+    it "does not accept a solver parameter it would never use" do
+      # the SMT seam is Verifier.payload_fits_smtlib + SmtProcess, wired
+      # by consumers who need it - the pipeline must not pretend it
+      # runs a solver behind the scenes
+      expect do
+        described_class.analyze(facts: facts_text, solver: "z3")
+      end.to raise_error(ArgumentError, /solver/)
+    end
+
     it "returns the full decision with provenance" do
       result = described_class.analyze(facts: facts_text)
       expect(result).to include(:applicable, :verified, :selected, :plan, :explain)
@@ -19,7 +28,7 @@ RSpec.describe Augure::Pipeline do
       prov = result[:explain][:provenance]["ret2plt"]
       expect(prov).not_to be_empty
       expect(prov.first[:rule]).to eq(:app_ret2plt)
-      expect(prov.first[:evidence]).to include(["vuln", "sof"])
+      expect(prov.first[:evidence]).to include(%w[vuln sof])
     end
 
     it "merges AG priors with KB priors" do

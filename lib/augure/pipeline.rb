@@ -15,22 +15,25 @@ module Augure
     # @param priors [Hash{String => [Numeric, Numeric]}, nil] prior table
     #   overriding the AG+EXTENDED+KB defaults (see Priors.from_trail
     #   usage in lictor for the closed loop)
-    # @param solver [String, nil] optional SMT solver binary for the SMT path
     # @param buffer_size [Integer] stack budget for payload-fit checks
     # @return [Hash] the decision:
     #   {applicable:, verified:, ranking:, selected:, plan:, explain:}
     #   The --json payload is the same hash stamped with
     #   "schema": "augure/decision@1" (stable contract).
+    # The verify layer is the ARITHMETIC feasibility check
+    # (Verifier.payload_fits). The SMT path is a separate, tested seam
+    # (Verifier.payload_fits_smtlib + SmtProcess) wired by consumers who
+    # need it - the pipeline does not run a solver behind the scenes.
     # plan: false skips the MCTS search (the corpus guard needs only the
     # deterministic applicable + prior-mean ranking; MCTS is the costly part).
-    def analyze(facts:, seed: nil, priors: nil, solver: nil, buffer_size: 256, packs: nil, plan: true)
+    def analyze(facts:, seed: nil, priors: nil, buffer_size: 256, packs: nil, plan: true)
       facts = Facts.parse(facts) if facts.is_a?(String)
       engine_rules = packs ? Rules.all + packs.flat_map(&:rules) : Rules.all
       effective_priors = PackLoader.priors_with(packs, priors || default_priors)
       engine_result = Engine.new(facts, rules: engine_rules).run
       applicable = engine_result.applicable
 
-      verified = verify(applicable, facts: facts, solver: solver, buffer_size: buffer_size)
+      verified = verify(applicable, facts: facts, buffer_size: buffer_size)
 
       # The seed drives the WHOLE draw, selection included: a decision
       # replayed with the same seed must select the same technique.
@@ -46,10 +49,14 @@ module Augure
         ranking: ranking.map(&:first),
         selected: selected,
         plan: plan,
-        explain: {provenance: engine_result.provenance_by_head
-          .select { |head, _| head[0] == Rules::APPLICABLE }
-          .transform_keys { |head| head[1] }
-          .transform_values { |provs| provs.map { |p| {rule: p[:rule], evidence: p[:evidence], origin: p[:origin]} } }}
+        explain: { provenance: engine_result.provenance_by_head
+                                            .select { |head, _| head[0] == Rules::APPLICABLE }
+                                            .transform_keys { |head| head[1] }
+                                            .transform_values do |provs|
+          provs.map do |p|
+            { rule: p[:rule], evidence: p[:evidence], origin: p[:origin] }
+          end
+        end }
       }
     end
 
@@ -65,20 +72,23 @@ module Augure
         merged = AG_PRIORS.merge(EXTENDED_PRIORS)
         KnowledgeBase.priors.each do |tech, (a, b)|
           merged[tech] = if merged[tech]
-            [merged[tech][0] + a, merged[tech][1] + b]
-          else
-            [a, b]
-          end
+                           [merged[tech][0] + a, merged[tech][1] + b]
+                         else
+                           [a, b]
+                         end
         end
         merged
       end
     end
 
-    def verify(applicable, facts:, solver:, buffer_size:)
+    def verify(applicable, facts:, buffer_size:)
+      # Arithmetic feasibility only. The SMT seam (payload_fits_smtlib +
+      # SmtProcess) is available to consumers; the pipeline does not
+      # claim to run a solver.
       applicable.each_with_object({}) do |tech, out|
         checks = {}
         checks[:payload_fits] = Verifier.payload_fits(buffer_size: buffer_size, payload_min: 40)
-        out[tech] = {status: (checks.values.all? { |s| s == :sat }) ? :sat : :unsat, checks: checks}
+        out[tech] = { status: checks.values.all? { |s| s == :sat } ? :sat : :unsat, checks: checks }
       end
     end
 
