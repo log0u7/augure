@@ -49,7 +49,7 @@ module Augure
         ranking: ranking.map(&:first),
         selected: selected,
         plan: plan,
-        explain: { provenance: explain_provenance(engine_result) }
+        explain: {provenance: explain_provenance(engine_result)}
       }
     end
 
@@ -59,7 +59,7 @@ module Augure
       heads = engine_result.provenance_by_head.select { |head, _| head[0] == Rules::APPLICABLE }
       heads.transform_keys { |head| head[1] }.transform_values do |provs|
         provs.map do |p|
-          { rule: p[:rule], evidence: p[:evidence], origin: p[:origin] }
+          {rule: p[:rule], evidence: p[:evidence], origin: p[:origin]}
         end
       end
     end
@@ -76,10 +76,10 @@ module Augure
         merged = AG_PRIORS.merge(EXTENDED_PRIORS)
         KnowledgeBase.priors.each do |tech, (a, b)|
           merged[tech] = if merged[tech]
-                           [merged[tech][0] + a, merged[tech][1] + b]
-                         else
-                           [a, b]
-                         end
+            [merged[tech][0] + a, merged[tech][1] + b]
+          else
+            [a, b]
+          end
         end
         merged
       end
@@ -92,7 +92,7 @@ module Augure
       applicable.each_with_object({}) do |tech, out|
         checks = {}
         checks[:payload_fits] = Verifier.payload_fits(buffer_size: buffer_size, payload_min: 40)
-        out[tech] = { status: checks.values.all? { |s| s == :sat } ? :sat : :unsat, checks: checks }
+        out[tech] = {status: (checks.values.all? { |s| s == :sat }) ? :sat : :unsat, checks: checks}
       end
     end
 
