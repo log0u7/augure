@@ -29,7 +29,7 @@ lictor acquire <target> --from <url>        # the nmap->binary bridge (or --bin 
 lictor fuzz <binary>                        # discovery: sweep + triage -> facts
 lictor verify <target> --input crash-input.bin  # the differential: remote-verified
 lictor suggest <facts> "plt(\"system\")."    # propose observations, augure re-decides (delta back)
-lictor plan <binary-or-facts> -a targets.yml [--json]   # decide (schema: augure/decision@1)
+lictor plan <binary-or-facts> [--json]   # decide (schema: augure/decision@1)
 lictor build <binary> --facts <facts>       # MEASURED offset + fact-sourced return -> payload file
 lictor run <target> --facts <f> --executor ronin
                                             # decide -> execute -> outcome -> re-decide

@@ -94,7 +94,7 @@ Write the pack (rules, kb, mcts, priors per the pack format), add its
 lictor rule validate my_pack.yml   # the armor + the corpus guard
 lictor rule install my_pack.yml    # the technique becomes decidable AND buildable
 lictor plan target.facts --packs packs/
-lictor build ret2mything --facts target.facts -a targets.yml
+lictor build ret2mything --facts target.facts
 ```
 
 The LLM path goes through the same armor: `validate_pack` and

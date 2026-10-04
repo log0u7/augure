@@ -8,11 +8,11 @@
   augure did not rank, and I quote decisions as predictions with
   provenance, never as proven results.
 - Loop (all recorded in the trail): `lictor doctor` ->
-  `lictor scan <host> -a targets.yml` -> `lictor acquire <target>
+  `lictor scan <host>` -> `lictor acquire <target>
   --from <url>|-bin <path>` -> [optional discovery: `lictor fuzz`,
   `lictor verify`] -> `lictor suggest <facts> "plt(\"system\")."`
   (propose observations; the delta comes back) -> `lictor plan
-  <binary-or-facts> -a targets.yml [--json]` -> `lictor build <binary>
+  <binary-or-facts> [--json]` -> `lictor build <binary>
   --facts <facts>` (offset measured, payload file) ->
   `lictor exploit scaffold <technique> <binary> --facts <facts>
   --repo-dir DIR` (no exploit in the repos? the draft lands, review it)

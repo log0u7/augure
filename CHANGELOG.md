@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The fact-atom grammar is enforced at `Facts#add` too (the wall goes
+  both ways): a symbol name from an untrusted binary or a version
+  string from a hostile banner can no longer carry quotes, parens or
+  newlines into a re-parsed facts file - the injected-facts decision
+  manipulation is closed. The profiler's win regex is anchored.
+
 ### Added
 
 - The general gadget hunter: every ret-terminated chain in the
