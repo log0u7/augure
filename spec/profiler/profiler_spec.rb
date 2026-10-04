@@ -45,6 +45,7 @@ RSpec.describe AugureProfiler::Profiler do
       expect(types).to include("syscall_ret")
       expect(types).to include("xchg_rsp_rax")
       expect(types).to include("mov_deref_write")
+      expect(types).to include("jmp_rsp")
     end
 
     it "emits gadget facts with integer addresses" do

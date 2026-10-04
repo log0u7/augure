@@ -120,6 +120,72 @@ module AugureProfiler
       send(:"#{resolved}_triage", binary, input)
     end
 
+    # The msf-style pattern: unique 3-grams (aA0aA1...), so ANY 3+ byte
+    # subsequence pins its exact offset. The crash address read under the
+    # debugger is found back in the pattern - that IS the offset to the
+    # return address, computed instead of guessed.
+    def cyclic(length)
+      out = +""
+      until out.size >= length
+        ("a".."z").each do |a|
+          ("A".."Z").each do |b|
+            ("0".."9").each do |c|
+              out << a + b + c
+              return out[0, length] if out.size >= length
+            end
+          end
+        end
+      end
+      out[0, length]
+    end
+
+    # The offset of `bytes` inside the pattern: try the full register
+    # width first, then the 32-bit truncation (the classic case where
+    # only four pattern bytes survive in the saved return slot).
+    def cyclic_offset(pattern, bytes)
+      [8, 4].each do |width|
+        next if bytes.bytesize < width
+
+        found = pattern.index(bytes[0, width])
+        return found if found
+      end
+      nil
+    end
+
+    # Two steps, like a human would: find the crash LENGTH with the
+    # deterministic sweep, then send a cyclic pattern of exactly that
+    # length so the crash lands on the corrupted return (an oversized
+    # pattern would fault on the stack write itself, never at the ret).
+    # The crash address read under the debugger is found back in the
+    # pattern - that IS the offset to the return address, computed
+    # instead of guessed. Returns nil when the binary does not crash or
+    # the pointer is not ours.
+    def offset(binary, backend: nil)
+      sweep = Fuzzer.run(binary, inputs: 40, max_len: 1024)
+      crash_len = sweep.first&.dig(:input)&.bytesize
+      return nil unless crash_len
+
+      # The sweep length is the MINIMAL overflow; the pattern needs
+      # enough tail to fill the whole saved-return slot with pattern
+      # bytes (8 on x64) while staying far from the write-fault zone.
+      pattern = cyclic(crash_len + 64)
+      report = run(binary, pattern, backend: backend)
+      return nil unless report[:signal] == "SIGSEGV"
+
+      # rip first (the clean case); then the saved-frame-pointer slot:
+      # a leave;ret epilogue crashes in leave when rbp is smashed, and
+      # the return slot sits exactly one register-width above it.
+      regs = report[:registers]
+      [["rip", 0], ["eip", 0], ["rbp", 8], ["ebp", 8]].each do |reg, shift|
+        addr = regs[reg]
+        next unless addr.is_a?(String) && addr.start_with?("0x")
+
+        off = cyclic_offset(pattern, [addr[2..].to_i(16)].pack("Q<"))
+        return off + shift if off
+      end
+      nil
+    end
+
     def facts(report)
       return "" unless report[:signal] == "SIGSEGV"
 

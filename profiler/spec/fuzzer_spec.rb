@@ -85,3 +85,28 @@ RSpec.describe AugureProfiler::Triage do
     end
   end
 end
+
+RSpec.describe "the cyclic offset" do
+  it "builds a unique-3-gram pattern and finds the offset of its own bytes" do
+    pattern = AugureProfiler::Triage.cyclic(400)
+    expect(pattern.size).to eq(400)
+    expect(pattern[0, 3]).to eq("aA0")
+    [0, 7, 100, 391].each do |off|
+      expect(AugureProfiler::Triage.cyclic_offset(pattern, pattern[off, 8])).to eq(off)
+    end
+  end
+
+  it "finds the offset through the 32-bit truncation of the register" do
+    pattern = AugureProfiler::Triage.cyclic(400)
+    full = pattern[100, 8]
+    truncated = full[0, 4] + "\x00\x00\x00\x00"
+    expect(AugureProfiler::Triage.cyclic_offset(pattern, truncated)).to eq(100)
+  end
+
+  it "reads the real offset of the fixture binary under gdb" do
+    skip "gdb not installed" unless system("sh", "-c", "command -v gdb >/dev/null")
+    offset = AugureProfiler::Triage.offset(ProfilerBinaryBuilder.vulnerable)
+    expect(offset).to be_a(Integer)
+    expect(offset).to be > 0
+  end
+end

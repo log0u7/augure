@@ -25,6 +25,7 @@ module AugureProfiler
       ["pop_rsi_ret", "5e c3"],             # pop rsi ; ret
       ["pop_rdx_ret", "5a c3"],             # pop rdx ; ret
       ["pop_rax_ret", "58 c3"],             # pop rax ; ret
+      ["JMP_STACK", "ff e4"],               # jmp esp/rsp - renamed per arch
       ["ret_align", "c3"]                   # ret
     ].freeze
 
@@ -74,9 +75,14 @@ module AugureProfiler
         facts.add("vuln_hint", "unsafe_func:#{n}") if UNSAFE_SYMBOLS.include?(n)
       end
       # CTF heuristic: a local win/flag function = a callable target
-      # (the ret2func family's target_function fact).
-      if names.any? { |n| n.match?(/\Awin\z|win\z|flag\z/) }
+      # (the ret2func family's target_function fact). The winning
+      # symbol keeps its name AND its address - the payload builder
+      # needs the address, not just the existence.
+      @elf.symbols.each do |sym|
+        next unless sym.name.to_s.match?(/\Awin\z|win\z|flag\z/)
+
         facts.add("target_function", "true")
+        facts.add("win_symbol", sym.name, sym.value.to_i)
       end
       if names.include?("__stack_chk_fail")
         facts.add("canary", "true")
@@ -94,8 +100,9 @@ module AugureProfiler
         bytes = section_bytes(section)
         next if bytes.nil? || bytes.empty?
 
+        stack_jump = (@elf.header.e_class.to_s == "64") ? "jmp_rsp" : "jmp_esp"
         scan_gadgets(bytes, section.addr.to_i).each do |(type, addr)|
-          facts.add("gadget", type, addr)
+          facts.add("gadget", type == "JMP_STACK" ? stack_jump : type, addr)
         end
       end
       emit_csu_gadgets(facts)

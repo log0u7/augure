@@ -47,6 +47,9 @@ module BinaryBuilder
         mov %r15, (%r14)
         ret
         nop
+        jmp %rsp
+        ret
+        nop
         syscall
         ret
         nop
