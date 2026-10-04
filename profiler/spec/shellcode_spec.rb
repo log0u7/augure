@@ -87,3 +87,29 @@ RSpec.describe "the ghost-writing variants" do
     expect(a).to eq(b)
   end
 end
+
+RSpec.describe "the parametrized stubs" do
+  let(:runner) do
+    exe = File.join(Dir.mktmpdir, "sc_runner3")
+    src = File.expand_path("support/sc_runner.c", __dir__)
+    _, err, status = Open3.capture3("gcc", "-o", exe, src)
+    raise "sc_runner build failed: #{err}" unless status.success?
+
+    exe
+  end
+
+  it "assembles an orw stub that reads and prints the flag file" do
+    flag = File.join(Dir.mktmpdir, "flag")
+    File.write(flag, "FLAG{orw_works}")
+    stub = AugureProfiler::Shellcode.generate(Metasm::X64, :orw, path: flag)
+    out, _err, status = Open3.capture3(runner, stdin_data: stub + "\nexit\n")
+    expect(out).to include("FLAG{orw_works}")
+    expect(status.success?).to be(true)
+  end
+
+  it "refuses a path-bearing stub assembled without its path" do
+    expect {
+      AugureProfiler::Shellcode.generate(Metasm::X64, :orw)
+    }.to raise_error(ArgumentError, /path/)
+  end
+end

