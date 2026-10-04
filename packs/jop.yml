@@ -1,0 +1,31 @@
+technique: jop
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/stackoverflow/x86/medium-rop/ (JOP/COP)
+
+rules:
+  - id: app_jop
+    head: [applicable, jop]
+    conditions:
+      - [fact, vuln, sof]
+      - [fact, nx, true]
+      - [fact, has_reg_control, true]
+      - [fact, has_pivot_gadget, true]
+
+kb:
+  - id: jop_001
+    technique: jop
+    description: >
+      Jump-oriented programming: the dispatcher is a jmp fed by a
+      controlled register - the shape CET-era defenses leave standing
+      when they watch returns. The facts name the dispatch gadget.
+    chain: [dispatcher_hunt, register_seed, dispatch_chain]
+    unlocks: [reg_control]
+    success_rate: 0.35
+
+mcts:
+  requires: []
+  provides: [reg_control]
+  terminal: true
+  success: 0.35
+
+priors: [6, 14]

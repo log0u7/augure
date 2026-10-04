@@ -1,0 +1,31 @@
+technique: got_partial_overwrite_deref
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/io-file/got-hijack/
+
+rules:
+  - id: app_got_partial_overwrite_deref
+    head: [applicable, got_partial_overwrite_deref]
+    conditions:
+      - [fact, relro, partial]
+      - [fact, got_overwrite_target, true]
+      - [fact, has_reg_control, true]
+
+kb:
+  - id: got_partial_overwrite_deref_001
+    technique: got_partial_overwrite_deref
+    description: >
+      The partial-GOT write with register control: overwrite the low
+      bytes of a resolved entry AND steer its argument registers - the
+      one-byte move that turns an arbitrary call into an arbitrary call
+      with your argument.
+    chain: [low_bytes_overwrite, reg_seed, reimport_call]
+    unlocks: [shell]
+    success_rate: 0.45
+
+mcts:
+  requires: []
+  provides: [shell]
+  terminal: true
+  success: 0.45
+
+priors: [6, 14]

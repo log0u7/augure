@@ -1,0 +1,31 @@
+technique: ret2vdso
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/stackoverflow/x86/advanced-rop/ret2vdso/
+
+rules:
+  - id: app_ret2vdso
+    head: [applicable, ret2vdso]
+    conditions:
+      - [fact, vuln, sof]
+      - [fact, nx, true]
+      - [fact, pie, true]
+
+kb:
+  - id: ret2vdso_001
+    technique: ret2vdso
+    description: >
+      The vDSO is mapped at a near-static offset for the process's
+      lifetime: gadgets in it survive PIE randomization of the main
+      image. A syscall-bearing page the loader itself mapped - scarce
+      gadgets, but exactly where the main binary has none.
+    chain: [vdso_base_establish, gadget_hunt, syscall_hop]
+    unlocks: [reg_control]
+    success_rate: 0.30
+
+mcts:
+  requires: []
+  provides: [reg_control]
+  terminal: true
+  success: 0.30
+
+priors: [5, 15]

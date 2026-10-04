@@ -1,0 +1,31 @@
+technique: large_bin_attack
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/heap/ptmalloc2/large-bin-attack/
+
+rules:
+  - id: app_large_bin_attack
+    head: [applicable, large_bin_attack]
+    conditions:
+      - [fact, vuln, heap]
+      - [fact, allocator, tcache]
+      - [cmp, glibc_minor, ge, 26]
+
+kb:
+  - id: large_bin_attack_001
+    technique: large_bin_attack
+    description: >
+      A forged bk_nextsize/bk in the large-bin insertion writes two
+      chosen addresses over the target - the unsorted-bin write's big
+      sibling, alive in every modern glibc. Two writes, unknown values,
+      one target each.
+    chain: [large_bin_entry, forged_pointers, double_write]
+    unlocks: [arb_write]
+    success_rate: 0.35
+
+mcts:
+  requires: []
+  provides: [arb_write]
+  terminal: true
+  success: 0.35
+
+priors: [6, 14]

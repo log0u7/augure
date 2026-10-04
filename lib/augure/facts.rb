@@ -18,12 +18,16 @@ module Augure
       "seccomp" => 1, "shellcode_input" => 1, "sigreturn_frame" => 1,
       "fmtstr_read" => 1, "reloc_writable" => 1, "dt_lazy" => 1,
       "limited_stack" => 1, "service" => 1, "software_version" => 1,
-      "remote" => 1, "verified" => 1, "win_symbol" => 2
+      "remote" => 1, "verified" => 1, "win_symbol" => 2,
+      "crash_site" => 1, "vuln_function" => 1, "sink" => 1
     }.freeze
 
     STRING_TYPES = {
       "gadget" => %w[string integer],
       "win_symbol" => %w[string integer],
+      "crash_site" => %w[string],
+      "vuln_function" => %w[string],
+      "sink" => %w[string],
       "glibc_minor" => %w[integer]
     }.freeze
 

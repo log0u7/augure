@@ -1,0 +1,30 @@
+technique: uaf_tcache
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/heap/ptmalloc2/use-after-free/
+
+rules:
+  - id: app_uaf_tcache
+    head: [applicable, uaf_tcache]
+    conditions:
+      - [fact, vuln, uaf]
+      - [fact, allocator, tcache]
+
+kb:
+  - id: uaf_tcache_001
+    technique: uaf_tcache
+    description: >
+      Use-after-free meets the tcache: the freed chunk's key and fd sit
+      in writable memory nobody cleared. A stale pointer into a fresh
+      allocation is the whole primitive - poisoning the tcache entry
+      finishes it.
+    chain: [free_after_use, stale_reference, tcache_poison]
+    unlocks: [arb_write]
+    success_rate: 0.45
+
+mcts:
+  requires: []
+  provides: [arb_write]
+  terminal: true
+  success: 0.45
+
+priors: [6, 14]

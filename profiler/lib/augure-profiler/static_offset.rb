@@ -217,5 +217,43 @@ module AugureProfiler
         []
       end
     end
+
+    # The crash, identified instead of guessed. The runtime rip cannot be
+    # slid back through ASLR, so the identification comes from the STATIC
+    # side: the vulnerable function and its sink are facts the frame read
+    # already established, and the CONTROL evidence is the pattern the
+    # cyclic input planted in the registers (rbp/rip carrying pattern
+    # bytes = the saved frame IS ours - the old tool inferred this from
+    # 0x41414141 shapes; here the pattern is known, so the proof is exact).
+    def self.crash_facts(path, report)
+      return {} unless report.is_a?(Hash) && report[:signal] == "SIGSEGV"
+
+      static = offset(path) || {}
+      facts = {vuln_function: static[:function], sink: static[:sink]}.compact
+
+      pattern = nil
+      if static[:offset]
+        sweep = begin
+          AugureProfiler::Fuzzer.run(path, inputs: 40, max_len: 1024)
+        rescue
+          nil
+        end
+        crash_len = sweep&.first&.dig(:input)&.bytesize
+        pattern = Triage.cyclic(crash_len + 64) if crash_len
+      end
+
+      controlled = %w[rip rsp rbp rax rbx rcx rdx rdi rsi r8 r9 r10 r11 r12 r13 r14 r15]
+        .any? do |reg|
+          val = report.dig(:registers, reg)
+          next false unless val.is_a?(String) && val.start_with?("0x")
+
+          raw = [val[2..].to_i(16)].pack("Q<")
+          # the register carries OUR bytes: a pattern subsequence (truncated
+          # to 4 bytes covers the classic ret-slot window) or the A-fill
+          raw.include?("AAAA") || (pattern && [8, 4].any? { |w| pattern.include?(raw[0, w]) })
+        end
+      facts[:crash_site] = controlled ? "ret" : "unknown"
+      facts
+    end
   end
 end

@@ -1,0 +1,30 @@
+technique: orw
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/sandbox/seccomp/c-sandbox-escape/
+
+rules:
+  - id: app_orw
+    head: [applicable, orw]
+    conditions:
+      - [fact, seccomp, true]
+      - [fact, nx, true]
+      - [fact, has_syscall_gadget, true]
+
+kb:
+  - id: orw_001
+    technique: orw
+    description: >
+      seccomp blocks execve: the open/read/write chain reads the flag
+      without ever spawning a shell. The chain needs the syscall gadget
+      the profiler already hunts, and every gadget the facts carry.
+    chain: [open_flag, read_fd, write_stdout]
+    unlocks: [flag_read]
+    success_rate: 0.45
+
+mcts:
+  requires: []
+  provides: [flag_read]
+  terminal: true
+  success: 0.45
+
+priors: [6, 14]

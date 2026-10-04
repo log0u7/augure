@@ -1,0 +1,31 @@
+technique: setcontext_srop
+author: Gregory Epp
+source: https://ctf-wiki.org/pwn/linux/user-mode/stackoverflow/x86/advanced-rop/srop/
+
+rules:
+  - id: app_setcontext_srop
+    head: [applicable, setcontext_srop]
+    conditions:
+      - [fact, libc_present, true]
+      - [fact, sigreturn_frame, true]
+      - [fact, has_syscall_gadget, true]
+
+kb:
+  - id: setcontext_srop_001
+    technique: setcontext_srop
+    description: >
+      The sigreturn path has two doors: the classic SROP frame and the
+      setcontext gadget (offset +53/+61 in modern glibc) that loads a
+      full register state from a controlled ucontext. Same primitive,
+      fewer gadgets, no mprotect needed.
+    chain: [frame_or_ucontext, setcontext_load, syscall_shell]
+    unlocks: [shell]
+    success_rate: 0.45
+
+mcts:
+  requires: [libc_base]
+  provides: [shell]
+  terminal: true
+  success: 0.45
+
+priors: [7, 13]

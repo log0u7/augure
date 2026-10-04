@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "augure-profiler/static_offset"
+require "augure-profiler"
 require_relative "support/binary_builder"
 require "tmpdir"
 
@@ -25,5 +25,23 @@ RSpec.describe AugureProfiler::StaticOffset do
     File.binwrite(clean, "\x7fELF\x02\x01\x01" + "\x00" * 64)
     # metasm refuses a truncated elf: the contract is nil, never a crash
     expect(described_class.offset(clean)).to be_nil
+  end
+end
+
+RSpec.describe "the crash identification" do
+  let(:fixture) { ProfilerBinaryBuilder.vulnerable }
+
+  it "names the function, the sink and confirms the control - from evidence" do
+    report = AugureProfiler::Triage.run(fixture, "A" * 512)
+    facts = AugureProfiler::StaticOffset.crash_facts(fixture, report)
+    expect(facts[:crash_site]).to eq("ret")
+    expect(facts[:vuln_function]).to eq("vuln_copy")
+    expect(facts[:sink]).to eq("strcpy")
+  end
+
+  it "says unknown for a crash that carries none of our bytes" do
+    report = AugureProfiler::Triage.run(fixture, "\x90" * 400)
+    facts = AugureProfiler::StaticOffset.crash_facts(fixture, report)
+    expect(facts[:crash_site]).to eq("unknown")
   end
 end

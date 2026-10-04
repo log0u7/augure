@@ -1,0 +1,30 @@
+technique: house_of_apple2
+author: Gregory Epp
+source: https://github.com/ROPgadget - the _IO_wfile_jumps era (roderick01)
+
+rules:
+  - id: app_house_of_apple2
+    head: [applicable, house_of_apple2]
+    conditions:
+      - [fact, vuln, heap]
+      - [cmp, glibc_minor, ge, 34]
+
+kb:
+  - id: house_of_apple2_001
+    technique: house_of_apple2
+    description: >
+      glibc 2.34 killed the classic hooks; the FILE structure survived.
+      House of Apple 2 walks _IO_wfile_overflow's vtable path to
+      _IO_wfile_jumps, turning a forged FILE into an arbitrary call -
+      the modern FSOP answer to the hookless age.
+    chain: [file_forge, wfile_jumps, wide_vtable_call]
+    unlocks: [arb_call]
+    success_rate: 0.30
+
+mcts:
+  requires: []
+  provides: [arb_call]
+  terminal: true
+  success: 0.30
+
+priors: [5, 15]

@@ -1,0 +1,30 @@
+technique: banner_leak
+author: Gregory Epp
+source: lictor lab - the banner practice is everywhere in CTF services
+
+rules:
+  - id: app_banner_leak
+    head: [applicable, banner_leak]
+    conditions:
+      - [fact, service, unknown]
+      - [fact, verified, remote]
+      - [fact, software_version, 0]
+
+kb:
+  - id: banner_leak_001
+    technique: banner_leak
+    description: >
+      The service prints its own addresses: "win() at 0x4011d6" is an
+      address handed over before the first input. The verified remote
+      fact anchors the observation; the leak feeds the build slots.
+    chain: [banner_read, address_parse, payload_assemble]
+    unlocks: [addresses]
+    success_rate: 0.60
+
+mcts:
+  requires: []
+  provides: [addresses]
+  terminal: false
+  success: 0.60
+
+priors: [7, 13]
