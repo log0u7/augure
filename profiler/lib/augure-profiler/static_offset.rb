@@ -29,7 +29,7 @@ module AugureProfiler
       arch = (elf.header.e_class.to_s == "64") ? :x64 : :x86
       @path = path
       stubs = plt_stubs(elf, arch)
-      unsafe = stubs.select { |name, _| UNSAFE_CALLS.include?(name) }
+      unsafe = stubs.slice(*UNSAFE_CALLS)
       return nil if unsafe.empty?
 
       @unsafe_addrs = unsafe.invert
@@ -110,7 +110,6 @@ module AugureProfiler
     # The buffer displacement in the argument setup, then the frame math:
     # on x64: [rbp-N] -> saved rbp at N..N+8, return at N+8..N+16.
     def frame_disp(instrs, call_idx, arch)
-      (arch == :x64) ? 8 : 4
       saved = (arch == :x64) ? 8 : 4
       base = (arch == :x64) ? "rbp" : "ebp"
       instrs[[call_idx - 8, 0].max...call_idx].reverse_each do |di|
