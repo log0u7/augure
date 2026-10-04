@@ -87,7 +87,7 @@ RSpec.describe Augure::Facts do
         .to raise_error(Augure::MalformedFact, /value domain/)
       expect { described_class.parse("verified(\"guess\").\n") }
         .to raise_error(Augure::MalformedFact, /value domain/)
-      expect { described_class.add("nx", "maybe") }
+      expect { described_class.new.add("nx", "maybe") }
         .to raise_error(Augure::MalformedFact, /value domain/)
     end
 
