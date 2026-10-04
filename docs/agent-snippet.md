@@ -13,7 +13,10 @@
   `lictor verify`] -> `lictor suggest <facts> "plt(\"system\")."`
   (propose observations; the delta comes back) -> `lictor plan
   <binary-or-facts> -a targets.yml [--json]` -> `lictor build <binary>
-  --facts <facts>` (offset measured under the debugger, payload file)
+  --facts <facts>` (offset measured, payload file) ->
+  `lictor exploit scaffold <technique> <binary> --facts <facts>
+  --repo-dir DIR` (no exploit in the repos? the draft lands, review it)
+  -> `lictor draft <facts> [binary]` (nothing applies? a staged pack)
   -> `lictor authorize <target>` (typed token) ->
   `lictor run <target> --facts <f> --executor ronin --consent-token <t>`
   -> `lictor outcome <run-id> --success|--failure --technique <t>` ->

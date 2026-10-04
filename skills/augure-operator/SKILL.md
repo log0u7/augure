@@ -19,7 +19,7 @@ description: Operate the augure/lictor auditable exploitation decision layer - v
 - You improvise BETWEEN the steps (which binary, which input, what the
   crash means) - never against the rules.
 
-## The full chain (13 steps, all recorded in the trail)
+## The full chain (15 steps, all recorded in the trail)
 
 ```sh
 lictor init                                 # fresh setup (scaffolds config)
@@ -34,6 +34,8 @@ lictor build <binary> --facts <facts>       # MEASURED offset + fact-sourced ret
 lictor authorize <target>                   # the operator TYPES the target -> token (15 min)
 lictor run <target> --facts <f> -a targets.yml --executor ronin --consent-token <t>
                                             # decide -> execute -> outcome -> re-decide
+lictor exploit scaffold <technique> <binary> --facts <facts> --repo-dir DIR   # draft the ronin exploit (review before commit)
+lictor draft <facts> [binary]   # nothing applies? the observations become a staged pack
 lictor outcome <run-id> --success --technique <t>   # feed the closed loop
 lictor report -o engagement.md              # the auditable deliverable
 ```
