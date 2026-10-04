@@ -125,8 +125,8 @@ RSpec.describe "the ghost-writing pools" do
   end
 
   it "ten seeds, ten living stubs, deterministic per seed" do
-    forms = (1..10).map { |seed| described_class.generate(Metasm::X64, :sh, rng: Random.new(seed)) }
-    again = (1..10).map { |seed| described_class.generate(Metasm::X64, :sh, rng: Random.new(seed)) }
+    forms = (1..10).map { |seed| AugureProfiler::Shellcode.generate(Metasm::X64, :sh, rng: Random.new(seed)) }
+    again = (1..10).map { |seed| AugureProfiler::Shellcode.generate(Metasm::X64, :sh, rng: Random.new(seed)) }
     expect(forms).to eq(again) # the audit reproduces the exact payload
     forms.each_with_index do |stub, i|
       _out, err, status = Open3.capture3(runner, stdin_data: stub + "\nexit\n")
