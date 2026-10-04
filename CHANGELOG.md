@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   manipulation is closed. The profiler's win regex is anchored.
 
 ### Added
+- ADRs: docs/adr/ records the architectural decisions and renouncements - the arch abstraction before any port (0001), ARM64 deferred behind it (0002), PE/Mach-O out of scope for v0.x (0003).
 
 - The general gadget hunter: every ret-terminated chain in the
   executable sections, semantically classified - write4 yields

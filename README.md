@@ -191,6 +191,10 @@ external library in the readline style.
 
 ## Documentation
 
+The architectural renouncements and deferrals are recorded as ADRs in
+[docs/adr/](docs/adr/): the arch abstraction before any port (0001), ARM64
+deferred behind it (0002), PE/Windows out of scope for v0.x (0003).
+
 | I want to... | Read |
 |---|---|
 | get my first decision in 10 minutes | [the tutorial](docs/tutorial.md) |
