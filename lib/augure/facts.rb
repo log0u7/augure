@@ -32,6 +32,22 @@ module Augure
       "glibc_minor" => %w[integer]
     }.freeze
 
+    # Closed value domains: a typo'd atom ("ture", "maybe") would parse,
+    # disable the closed-world default, and every rule of the predicate
+    # would silently never fire. The loud-failure philosophy stops at
+    # the grammar AND the vocabulary.
+    VALUE_DOMAINS = {
+      "nx" => %w[true false], "pie" => %w[true false], "canary" => %w[true false],
+      "relro" => %w[none partial full], "target_function" => %w[true false],
+      "libc_present" => %w[true false], "function_pointer_on_heap" => %w[true false],
+      "got_overwrite_target" => %w[true false], "seccomp" => %w[true false],
+      "shellcode_input" => %w[true false], "sigreturn_frame" => %w[true false],
+      "fmtstr_read" => %w[true false], "reloc_writable" => %w[true false],
+      "dt_lazy" => %w[true false], "limited_stack" => %w[true false],
+      "remote" => %w[true false], "verified" => %w[remote],
+      "return_addr_filtered" => %w[true false]
+    }.freeze
+
     include Enumerable
 
     def self.parse(text)
@@ -85,16 +101,17 @@ module Augure
     # Builder API for programmatic construction (the profiler's contract):
     # identical validation as parsing - same schema, same loud failures.
     def add(name, *args)
-      unless SCHEMA.key?(name)
-        raise UnknownPredicate, "unknown predicate #{name.inspect}"
-      end
+      raise UnknownPredicate, "unknown predicate #{name.inspect}" unless SCHEMA.key?(name)
 
       arity = SCHEMA[name]
-      unless args.size == arity
-        raise MalformedFact, "#{name} expects arity #{arity}, got #{args.size}"
-      end
+      raise MalformedFact, "#{name} expects arity #{arity}, got #{args.size}" unless args.size == arity
 
       check_types(name, args, 0)
+      domain = VALUE_DOMAINS[name]
+      if domain && args.size == 1 && args.first.is_a?(String) && !domain.include?(args.first)
+        raise MalformedFact, "#{name}: value #{args.first.inspect} is outside the value domain #{domain.inspect}"
+      end
+
       # the atom grammar is the load-bearing wall: a symbol name from an
       # untrusted binary (win_symbol) or a version string from a hostile
       # banner (software_version) must not carry quotes, backslashes,
@@ -117,19 +134,14 @@ module Augure
     private
 
     def consume(line, lineno)
-      if line.include?(":-")
-        raise MalformedFact, "line #{lineno}: rules are not facts, only facts belong here"
-      end
+      raise MalformedFact, "line #{lineno}: rules are not facts, only facts belong here" if line.include?(":-")
 
       match = line.match(/\A([a-z][a-z0-9_]*)\((.*)\)\.\z/)
-      unless match
-        raise MalformedFact, "line #{lineno}: malformed fact #{line.inspect}"
-      end
+      raise MalformedFact, "line #{lineno}: malformed fact #{line.inspect}" unless match
 
-      name, raw_args = match[1], match[2]
-      unless SCHEMA.key?(name)
-        raise UnknownPredicate, "line #{lineno}: unknown predicate #{name.inspect}"
-      end
+      name = match[1]
+      raw_args = match[2]
+      raise UnknownPredicate, "line #{lineno}: unknown predicate #{name.inspect}" unless SCHEMA.key?(name)
 
       args = parse_args(raw_args, name, lineno)
       begin
@@ -169,9 +181,9 @@ module Augure
 
     def emit_fact(name, tuple)
       types = STRING_TYPES[name]
-      args = tuple.each_with_index.map { |arg, i|
+      args = tuple.each_with_index.map do |arg, i|
         (types && types[i] == "integer") ? arg.to_s : %("#{arg}")
-      }
+      end
       "#{name}(#{args.join(", ")}).\n"
     end
   end

@@ -23,13 +23,13 @@ RSpec.describe Augure::Facts do
 
     it "parses multi-arg relations with integer atoms" do
       facts = described_class.parse("gadget(\"pop_rdi_ret\", 4198400).\n")
-      expect(facts.rel("gadget")).to eq([["pop_rdi_ret", 4198400]])
+      expect(facts.rel("gadget")).to eq([["pop_rdi_ret", 4_198_400]])
     end
 
     it "groups facts by relation" do
       facts = described_class.parse(text)
       expect(facts.rel("plt")).to eq([["puts"]])
-      expect(facts.rel("gadget")).to eq([["pop_rdi_ret", 4198400]])
+      expect(facts.rel("gadget")).to eq([["pop_rdi_ret", 4_198_400]])
     end
 
     it "keeps insertion order inside a relation" do
@@ -44,27 +44,27 @@ RSpec.describe Augure::Facts do
     end
 
     it "raises UnknownPredicate on an undeclared predicate" do
-      expect {
+      expect do
         described_class.parse("not_a_predicate(\"x\").\n")
-      }.to raise_error(Augure::UnknownPredicate, /not_a_predicate/)
+      end.to raise_error(Augure::UnknownPredicate, /not_a_predicate/)
     end
 
     it "raises MalformedFact with the line number on bad syntax" do
-      expect {
+      expect do
         described_class.parse("nx(\"true\").\nxyz garbage line\n")
-      }.to raise_error(Augure::MalformedFact, /line 2/)
+      end.to raise_error(Augure::MalformedFact, /line 2/)
     end
 
     it "rejects rules (:-) with MalformedFact" do
-      expect {
+      expect do
         described_class.parse("applicable(\"rop\") :- vuln(\"sof\").\n")
-      }.to raise_error(Augure::MalformedFact, /rules are not facts/)
+      end.to raise_error(Augure::MalformedFact, /rules are not facts/)
     end
 
     it "rejects wrong arity for a declared predicate" do
-      expect {
+      expect do
         described_class.parse("nx(\"true\", \"extra\").\n")
-      }.to raise_error(Augure::MalformedFact, /arity/)
+      end.to raise_error(Augure::MalformedFact, /arity/)
     end
 
     it "rejects unquoted atoms for string positions" do
@@ -75,6 +75,20 @@ RSpec.describe Augure::Facts do
     it "rejects integers where the schema expects a string" do
       expect { described_class.parse("nx(1).\n") }
         .to raise_error(Augure::MalformedFact, /string atom/)
+    end
+
+    it "rejects values outside a closed value domain (a typo must not silence the rules)" do
+      # nx("maybe") parses fine under a string-only schema, disables the
+      # closed-world default, and every nx rule silently never fires.
+      # Closed predicates validate their vocabulary.
+      expect { described_class.parse("nx(\"maybe\").\n") }
+        .to raise_error(Augure::MalformedFact, /value domain/)
+      expect { described_class.parse("relro(\"sorta\").\n") }
+        .to raise_error(Augure::MalformedFact, /value domain/)
+      expect { described_class.parse("verified(\"guess\").\n") }
+        .to raise_error(Augure::MalformedFact, /value domain/)
+      expect { described_class.add("nx", "maybe") }
+        .to raise_error(Augure::MalformedFact, /value domain/)
     end
 
     it "parses the entire frozen CTF corpus" do
