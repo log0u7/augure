@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Shellcode.generate` on Ia32 with a seeded rng crashed (`zero_esi` pool had no x86 key while every x86 stub zeroes `ecx`); the pool is now `zero_ecx`, and the x86 seeds are regression-tested (assembly + decode validity; the live-run proof stays x64 - a 32-bit runner needs gcc multilib).
 
 ### Fixed
+- The pack armor let an invalid `match` pattern (`"("`) and a non-integer or unknown-operator `cmp` (`"26"`, `"gtr"`) through to decision time, where they died as `RegexpError`/`ArgumentError`/`KeyError` - violating the fail-loudly-at-load doctrine. Armor check 7: match patterns precompile and cmp operands/operators type-check at load, all as `PackError`.
 
 - The fact-atom grammar is enforced at `Facts#add` too (the wall goes
   both ways): a symbol name from an untrusted binary or a version

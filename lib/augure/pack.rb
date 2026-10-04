@@ -49,12 +49,16 @@ module Augure
 
     def validate_shape
       @technique = @data["technique"]
-      reject "technique name must match [a-z0-9_]+" unless @technique.is_a?(String) && @technique.match?(/\A[a-z0-9_]+\z/)
+      unless @technique.is_a?(String) && @technique.match?(/\A[a-z0-9_]+\z/)
+        reject "technique name must match [a-z0-9_]+"
+      end
 
       @author = @data["author"]
       reject "author is mandatory (provenance is not optional)" unless @author.is_a?(String) && !@author.empty?
       @source = @data["source"]
-      reject "source is mandatory (write-up URL, ticket, anything verifiable)" unless @source.is_a?(String) && !@source.empty?
+      unless @source.is_a?(String) && !@source.empty?
+        reject "source is mandatory (write-up URL, ticket, anything verifiable)"
+      end
 
       validate_rules(@data["rules"])
       validate_kb(@data["kb"])
@@ -80,7 +84,9 @@ module Augure
       rules.each_with_index do |rule, i|
         reject "rule #{i}: id mandatory" unless rule["id"].is_a?(String)
         head = rule["head"]
-        reject "rule #{i}: head must be [applicable, <technique>]" unless head.is_a?(Array) && head[0] == Rules::APPLICABLE && head[1] == @technique
+        unless head.is_a?(Array) && head[0] == Rules::APPLICABLE && head[1] == @technique
+          reject "rule #{i}: head must be [applicable, <technique>]"
+        end
         if built_in_techniques.include?(head[1])
           reject "head overrides a built-in technique (#{head[1]}) - new techniques only"
         end
@@ -98,15 +104,27 @@ module Augure
         reject "#{label}: #{cond.inspect} is outside the condition vocabulary #{CONDITION_VOCABULARY.inspect}"
       end
 
-      kind, rel = cond[0], cond[1]
+      kind = cond[0]
+      rel = cond[1]
       if kind == "not_fact"
         unless input_predicates.key?(rel)
           reject "#{label}: not_fact on #{rel.inspect} breaks stratification (negation on input facts only)"
         end
       elsif kind == "cmp"
         reject "#{label}: cmp needs [cmp, rel, op, n]" unless cond.size == 4
-        unless input_predicates.key?(rel)
-          reject "#{label}: unknown predicate #{rel.inspect}"
+        reject "#{label}: unknown predicate #{rel.inspect}" unless input_predicates.key?(rel)
+        unless Engine::OP.key?(cond[2].to_sym)
+          reject "#{label}: cmp operator #{cond[2].inspect} unknown (#{Engine::OP.keys.join(", ")})"
+        end
+        unless cond[3].is_a?(Integer)
+          reject "#{label}: cmp operand #{cond[3].inspect} must be an integer (the engine compares integer fact values)"
+        end
+      elsif kind == "match"
+        reject "#{label}: match pattern #{cond[3].inspect} must be a string" unless cond[3].is_a?(String)
+        begin
+          Regexp.new(cond[3])
+        rescue RegexpError => e
+          reject "#{label}: match pattern #{cond[3].inspect} is not a valid regex (#{e.message})"
         end
       else
         reject "#{label}: unknown predicate #{rel.inspect}" unless known_predicates.include?(rel)
@@ -129,11 +147,15 @@ module Augure
         reject "mcts.#{k} must be an array" unless mcts[k].is_a?(Array)
       end
       reject "mcts.terminal must be true or false" unless [true, false].include?(mcts["terminal"])
-      reject "mcts.success must be a number in [0, 1]" unless mcts["success"].is_a?(Numeric) && mcts["success"].between?(0, 1)
+      reject "mcts.success must be a number in [0, 1]" unless mcts["success"].is_a?(Numeric) && mcts["success"].between?(
+        0, 1
+      )
     end
 
     def validate_priors(priors)
-      reject "priors must be [alpha, beta] (two numbers)" unless priors.is_a?(Array) && priors.size == 2 && priors.all?(Numeric)
+      return if priors.is_a?(Array) && priors.size == 2 && priors.all?(Numeric)
+
+      reject "priors must be [alpha, beta] (two numbers)"
     end
 
     def build

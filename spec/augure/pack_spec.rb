@@ -50,6 +50,23 @@ RSpec.describe Augure::Pack do
         .to raise_error(Augure::PackError, /source/)
     end
 
+    it "rejects a match pattern that is not a valid regex (check 7: fail at load)" do
+      bad = pack_yaml
+      bad["rules"][0]["conditions"][1] = ["match", "gadget", 0, "("]
+      expect { described_class.load_hash(bad) }
+        .to raise_error(Augure::PackError, /match pattern/)
+    end
+
+    it "rejects cmp with a non-integer operand or an unknown operator" do
+      bad = pack_yaml
+      bad["rules"][0]["conditions"][1] = ["cmp", "glibc_minor", "ge", "26"]
+      expect { described_class.load_hash(bad) }
+        .to raise_error(Augure::PackError, /cmp operand/)
+      bad["rules"][0]["conditions"][1] = ["cmp", "glibc_minor", "gtr", 26]
+      expect { described_class.load_hash(bad) }
+        .to raise_error(Augure::PackError, /cmp operator/)
+    end
+
     it "rejects unknown condition vocabularies" do
       bad = pack_yaml
       bad["rules"][0]["conditions"][0] = ["eval", "system('rm -rf /')"]
