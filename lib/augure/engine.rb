@@ -37,9 +37,15 @@ module Augure
           head_key = [rule.head[0], rule.head[1..]]
           evidence = satisfy(rule.conditions, rels)
           next if evidence.empty?
-          next if rels.key?(head_key)
 
-          rels[head_key] = evidence
+          # sibling rules sharing a head ALL contribute: the provenance
+          # carries every reason that fired, each attributed to its own
+          # rule (the docs promise "which reason fired" - all of them).
+          known = rels[head_key] || []
+          fresh = evidence.reject { |combo| known.any? { |(c, _)| c == combo } }
+          next if fresh.empty?
+
+          rels[head_key] = known + fresh.map { |combo| [combo, rule] }
           fired = true
         end
         break unless fired
@@ -50,8 +56,9 @@ module Augure
 
     private
 
-    # key: [rel_name, tuple]; value: evidence (tuple combos that fired it).
-    # Input facts carry an empty evidence; defaults are seeded as inputs.
+    # key: [rel_name, tuple]; value: [[combo, rule], ...] - every firing
+    # (dedup by combo) with its own rule attribution. Input facts carry
+    # an empty evidence; defaults are seeded as inputs.
     def seeded_relations
       rels = {}
       @facts.each { |(name, tuple)| rels[[name, tuple]] = [] }
@@ -104,26 +111,18 @@ module Augure
     def build_result(rels)
       derived = {}
       provs = {}
-      rels.each do |(r, t), evidence|
+      rels.each do |(r, t), firings|
         # Pure input facts (empty evidence) never surface as derived outputs.
-        next if evidence.empty?
+        next if firings.empty?
 
         (derived[r] ||= []) << t
         key = [r, t[0]]
         entries = provs[key] ||= []
-        evidence.each do |combo|
-          entries << {rule: rule_for(key), origin: origin_for(key), evidence: combo.reject(&:empty?)}
+        firings.each do |(combo, rule)|
+          entries << {rule: rule.id, origin: rule.origin, evidence: combo.reject(&:empty?)}
         end
       end
       Result.new(derived, provs)
-    end
-
-    def rule_for(head_key)
-      @rules.find { |r| r.head == head_key }&.id
-    end
-
-    def origin_for(head_key)
-      @rules.find { |r| r.head == head_key }&.origin
     end
   end
 end

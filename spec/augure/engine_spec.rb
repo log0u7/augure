@@ -119,8 +119,20 @@ RSpec.describe Augure::Engine do
       prov = r.provenance("ret2plt")
       expect(prov).not_to be_empty
       expect(prov.first[:rule]).to eq(:app_ret2plt)
-      expect(prov.first[:evidence]).to include(["vuln", "sof"])
-      expect(prov.first[:evidence]).to include(["plt", "system"])
+      expect(prov.first[:evidence]).to include(%w[vuln sof])
+      expect(prov.first[:evidence]).to include(%w[plt system])
+    end
+
+    it "sibling rules sharing a head ALL survive in the provenance" do
+      # the docs promise: split OR-conditions into sibling rules sharing
+      # the head, and the provenance tells WHICH reason fired - all of
+      # them, not the first winner.
+      f = "vuln(\"sof\").\nplt(\"__libc_start_main\").\nlibc_present(\"true\").\n"
+      r = described_class.new(facts_for(f)).run
+      prov = r.provenance("ret2libc")
+      rules = prov.map { |e| e[:rule] }
+      expect(rules).to include(:app_ret2libc_plt)
+      expect(rules).to include(:app_ret2libc_libc)
     end
   end
 
@@ -142,7 +154,7 @@ RSpec.describe Augure::Engine do
           "dt_lazy(\"true\").\nreloc_writable(\"true\").\n"
       expect(applicable(f)).to eq(["ret2dlresolve"])
 
-      full = f.sub("dt_lazy(\"true\")", "dt_lazy(\"false\")")
+      full = f.sub('dt_lazy("true")', 'dt_lazy("false")')
       expect(applicable(full)).to be_empty
     end
 
@@ -171,7 +183,7 @@ RSpec.describe Augure::Engine do
       fmt = "vuln(\"fmtstr\").\ngot_overwrite_target(\"true\").\nrelro(\"partial\").\n"
       expect(applicable(fmt)).to include("got_overwrite")
 
-      full = f.sub("relro(\"partial\")", "relro(\"full\")")
+      full = f.sub('relro("partial")', 'relro("full")')
       expect(applicable(full)).not_to include("got_overwrite")
     end
   end
@@ -194,7 +206,7 @@ end
 RSpec.describe "cmp conditions from data (packs)" do
   it "accepts string comparison ops - YAML carries strings, not symbols" do
     facts = Augure::Facts.parse("glibc_minor(31).\n")
-    rule = Augure::Rules::Rule.new("spec_cmp", [:x, :ok],
+    rule = Augure::Rules::Rule.new("spec_cmp", %i[x ok],
       [[:cmp, "glibc_minor", "ge", 29]], "spec", nil)
     result = Augure::Engine.new(facts, rules: [rule]).run
     expect(result.derived_rels[:x]).to eq([[:ok]])
