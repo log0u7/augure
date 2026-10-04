@@ -56,8 +56,14 @@ module Augure
         caps + model.fetch(tech)[1]
       end
 
+      # terminal = any capability a terminal:true stage PROVIDES (the model
+      # owns the semantics - the orw pack terminates on flag_read, not
+      # on a shell that never comes). Built-in terminals all provide
+      # "shell", so built-in behaviour is unchanged.
       def terminal?(caps, model: STAGE_MODEL)
-        caps.include?("shell")
+        model.each_value.any? do |(_, provides, term, _)|
+          term && provides.any? { |c| caps.include?(c) }
+        end
       end
 
       def stage(tech, model: STAGE_MODEL)
@@ -78,7 +84,7 @@ module Augure
       # Reaching shell is necessary but not sufficient: the terminal
       # technique's own success scales the reward.
       def rollout(caps, allowed, depth: 0, rng: Random.new, max_depth: MAX_DEPTH, model: STAGE_MODEL)
-        return 1.0 if terminal?(caps)
+        return 1.0 if terminal?(caps, model: model)
         return 0.0 if depth >= max_depth
 
         avail = available(caps, allowed, model: model)
@@ -99,9 +105,7 @@ module Augure
         iterations.times do
           node = root
           # 1. Selection
-          while node.untried.empty? && !node.children.empty?
-            node = node.children.max_by { |n| n.ucb1(node.visits) }
-          end
+          node = node.children.max_by { |n| n.ucb1(node.visits) } while node.untried.empty? && !node.children.empty?
           # 2. Expansion
           unless node.untried.empty?
             tech = node.untried.pop
@@ -113,7 +117,7 @@ module Augure
           end
           # 3. Simulation. An already-terminal expansion node scores its own
           #    technique's success, not a flat 1.0.
-          reward = if terminal?(node.caps) && node.technique_used
+          reward = if terminal?(node.caps, model: model) && node.technique_used
             stage(node.technique_used, model: model)[3]
           else
             rollout(node.caps, allowed, rng: rng, model: model)

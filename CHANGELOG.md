@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
+- `Mcts.terminal?` hardcoded `shell`: a pack declaring `terminal: true` (orw provides `flag_read`) could never terminate a plan, so pack-authored terminal semantics - validated by the armor, stored by `merged_model` - were ignored and plans ran on toward a shell the technique never delivers. The model's terminal stages now own the semantics; the built-in model (all terminals provide `shell`) behaves identically, 33/33 concordance.
 - The engine refused to re-derive an existing head: sibling rules sharing a head (the documented way to express OR) lost every reason after the first, so `explain.provenance` contradicted `how-to-write-rules.md` ("the provenance tells which reason fired"). All firings now merge into the head, each attributed to its own rule; verdicts unchanged (33/33 concordance).
 - `plt` facts described every identifier-shaped symbol (`main`, `_start`, `_DYNAMIC`, a local function named `system`...): a local `system` satisfied `app_ret2plt` and the parity subset check could pass for the wrong reason. `plt` now means real dynamic imports only (shndx == UNDEF, FUNC type), regression-tested against a local-system binary; ROP Emporium parity stays 8/8.
 - `Shellcode.generate` on Ia32 with a seeded rng crashed (`zero_esi` pool had no x86 key while every x86 stub zeroes `ecx`); the pool is now `zero_ecx`, and the x86 seeds are regression-tested (assembly + decode validity; the live-run proof stays x64 - a 32-bit runner needs gcc multilib).

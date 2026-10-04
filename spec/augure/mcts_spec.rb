@@ -7,18 +7,38 @@ RSpec.describe Augure::Mcts do
   describe "STAGE_MODEL" do
     it "gates techniques behind their required capabilities" do
       caps = Augure::Mcts.caps
-      expect(described_class.available(caps, ["ret2libc", "shellcode"])).to eq(["shellcode"])
+      expect(described_class.available(caps, %w[ret2libc shellcode])).to eq(["shellcode"])
     end
 
     it "unlocks ret2libc after a libc leak" do
       caps = Augure::Mcts.transition(Augure::Mcts.caps, "fmtstr_leak")
-      expect(described_class.available(caps, ["ret2libc", "rop"])).to contain_exactly("ret2libc", "rop")
+      expect(described_class.available(caps, %w[ret2libc rop])).to contain_exactly("ret2libc", "rop")
     end
 
     it "detects terminal states" do
       shell = Augure::Mcts.transition(Augure::Mcts.caps, "shellcode")
       expect(described_class.terminal?(shell)).to be(true)
       expect(described_class.terminal?(Augure::Mcts.caps)).to be(false)
+    end
+
+    it "honours the MODEL's terminal semantics, not the hardcoded shell" do
+      # the orw pack declares terminal: true providing flag_read - a
+      # plan must stop there, not run on toward a shell that never comes
+      model = {
+        "leak_flag" => [[], %w[flag_read], true, 0.80],
+        "shell_tech" => [%w[flag_read], %w[shell], true, 0.90]
+      }.freeze
+      expect(described_class.terminal?(Set.new(%w[flag_read]), model: model)).to be(true)
+      expect(described_class.terminal?(Set.new(%w[nonsense]), model: model)).to be(false)
+
+      best_first, path = described_class.plan(%w[leak_flag shell_tech], iterations: 300, seed: 1, model: model)
+      expect(best_first).to eq("leak_flag")
+      expect(path).to eq(%w[leak_flag]) # no phantom second step toward shell
+    end
+
+    it "shell remains terminal in the built-in model" do
+      expect(described_class.terminal?(Set.new(%w[libc_base shell]))).to be(true)
+      expect(described_class.terminal?(Set.new(%w[libc_base]))).to be(false)
     end
   end
 
