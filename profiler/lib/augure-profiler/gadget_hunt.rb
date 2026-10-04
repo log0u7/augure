@@ -28,8 +28,13 @@ module AugureProfiler
         .each do |sec|
         data = StaticOffset.section_data(path, sec)
         base = sec.addr.to_i
+        # ONE EncodedData per section: decode_instruction reads from
+        # edata.ptr, so each offset is a pointer move - not a copy of
+        # the remaining section (the old data[off..] was O(n^2) in
+        # memory traffic: ~512 GB cumulative for a 1 MB .text).
+        edata = Metasm::EncodedData.new(data)
         (0...data.bytesize).each do |i|
-          chain = decode_chain(cpu, data, i, base)
+          chain = decode_chain(cpu, edata, i, base)
           next unless chain
 
           type = classify(chain)
@@ -43,15 +48,16 @@ module AugureProfiler
 
     # decode up to MAX_CHAIN instructions starting at offset i; the
     # chain must END on a terminal (ret) with no killer inside. Returns
-    # the instruction STRINGS or nil.
-    def decode_chain(cpu, data, i, _base)
+    # the instruction STRINGS or nil. edata is shared: decode_at moves
+    # its ptr, callers must not assume it stays put.
+    def decode_chain(cpu, edata, i, _base)
       instrs = []
       off = i
-      limit = data.bytesize
+      limit = edata.data.bytesize
       MAX_CHAIN.times do
         return nil if off >= limit
 
-        di = decode_at(cpu, data, off)
+        di = decode_at(cpu, edata, off)
         return nil unless di
 
         text = di.instruction.to_s
@@ -69,12 +75,13 @@ module AugureProfiler
       instrs + ["ret"]
     end
 
-    # decode one instruction at data offset off - metasm's one-shot
-    # decode_instruction on the raw bytes
-    def decode_at(cpu, data, off)
-      di = cpu.decode_instruction(Metasm::EncodedData.new(data[off..]), 0)
+    # decode one instruction at edata offset off - metasm's one-shot
+    # decode_instruction reading from the shared EncodedData's ptr
+    def decode_at(cpu, edata, off)
+      edata.ptr = off
+      di = cpu.decode_instruction(edata, 0)
       di&.instruction ? di : nil
-    rescue Metasm::DecodeError, Metasm::ParseError, StandardError
+    rescue Metasm::DecodeError, Metasm::ParseError
       nil
     end
 
@@ -95,6 +102,7 @@ module AugureProfiler
           instrs.first.include?("]")
         return "mov_deref_write"
       end
+
       nil
     end
   end
