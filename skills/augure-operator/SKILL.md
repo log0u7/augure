@@ -1,6 +1,6 @@
 ---
 name: augure-operator
-description: Operate the augure/lictor auditable exploitation decision layer - verify environments, decide techniques on fact files, run allowlist-checked scans, record outcomes, write validated technique packs. Use when the user says augure, lictor, "which technique on this target", technique pack, or asks to analyze a binary/CTF target with an auditable decision layer.
+description: Operate the augure/lictor auditable exploitation decision layer - verify environments, decide techniques on fact files, scan targets, record outcomes, write validated technique packs. Use when the user says augure, lictor, "which technique on this target", technique pack, or asks to analyze a binary/CTF target with an auditable decision layer.
 ---
 
 # Operating augure + lictor
@@ -12,27 +12,26 @@ description: Operate the augure/lictor auditable exploitation decision layer - v
   applicable/verified - that is the point. Never claim a technique
   augure did not select.
 - **lictor executes the logistics**: scans, profiling, recipes, the
-  trail. The allowlist and the consent tokens are the law; work
+  trail. You are the operator: what runs, you ran it; work
   around them and you are out.
 - **Decisions are predictions with provenance** (rule ID + evidence +
   seed). Quote them as such - never as field-proven results.
 - You improvise BETWEEN the steps (which binary, which input, what the
   crash means) - never against the rules.
 
-## The full chain (15 steps, all recorded in the trail)
+## The full chain (14 steps, all recorded in the trail)
 
 ```sh
 lictor init                                 # fresh setup (scaffolds config)
 lictor doctor                               # verify env, exact fix per check
-lictor scan <host> -a targets.yml           # nmap; the target must be in the allowlist
+lictor scan <host>                           # nmap; the scan is trailed
 lictor acquire <target> --from <url>        # the nmap->binary bridge (or --bin <path>)
 lictor fuzz <binary>                        # discovery: sweep + triage -> facts
 lictor verify <target> --input crash-input.bin  # the differential: remote-verified
 lictor suggest <facts> "plt(\"system\")."    # propose observations, augure re-decides (delta back)
 lictor plan <binary-or-facts> -a targets.yml [--json]   # decide (schema: augure/decision@1)
 lictor build <binary> --facts <facts>       # MEASURED offset + fact-sourced return -> payload file
-lictor authorize <target>                   # the operator TYPES the target -> token (15 min)
-lictor run <target> --facts <f> -a targets.yml --executor ronin --consent-token <t>
+lictor run <target> --facts <f> --executor ronin
                                             # decide -> execute -> outcome -> re-decide
 lictor exploit scaffold <technique> <binary> --facts <facts> --repo-dir DIR   # draft the ronin exploit (review before commit)
 lictor draft <facts> [binary]   # nothing applies? the observations become a staged pack
@@ -64,13 +63,13 @@ you are missing before doubting the rule.
    `lictor rule validate pack.yml` - each refusal names the
    check that failed; fix the data, never bypass the armor.
 5. Install only with explicit operator confirmation (interactive or
-   consent token). Rules change every future decision - that is why.
+   decision). Rules change every future decision - that is why.
 
 ## Hard rules (violating these = you are the vulnerability)
 
-- Targets outside `targets.yml` = never. The allowlist is the scope
-  document; do not suggest entries you have not verified against the
-  engagement contract.
+- Authorized use only. The operator decides the scope; suggest only
+  targets they have named. You are responsible for the legality where
+  you stand.
 - Exploit names come from the operator's ronin repos - never invent one.
 - Packs contain data, never code. If a pack needs code, the technique
   is not a pack.

@@ -17,15 +17,15 @@
   `lictor exploit scaffold <technique> <binary> --facts <facts>
   --repo-dir DIR` (no exploit in the repos? the draft lands, review it)
   -> `lictor draft <facts> [binary]` (nothing applies? a staged pack)
-  -> `lictor authorize <target>` (typed token) ->
-  `lictor run <target> --facts <f> --executor ronin --consent-token <t>`
+  `lictor run <target> --facts <f> --executor ronin`
   -> `lictor outcome <run-id> --success|--failure --technique <t>` ->
   `lictor report`. Full skill: augure/skills/augure-operator/SKILL.md.
 - New technique = a PACK (YAML data, never code): copy
   `augure/packs/ret2csu_v2.yml`, validate with `lictor rule validate`,
   install only with operator confirmation. The corpus guard refuses
   packs that move frozen verdicts - read the refusal, fix the data.
-- The allowlist file is the scope: targets outside it = never, no
+- Authorized use only: the operator decides the scope, the trail
+   records it. No
   exceptions. The trail is never edited.
 - Payload contract: `--json` emits schema "augure/decision@1".
 ```

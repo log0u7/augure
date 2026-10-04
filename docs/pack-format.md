@@ -72,8 +72,8 @@ lictor rule install my_pack.yml     # interactive confirm, versioned, trailed
 augure analyze target.facts         # your technique is now decidable
 ```
 
-Via an MCP agent: the `rule_install` tool requires a consent token
-(`lictor authorize`), because rules change every future decision.
+Via an MCP agent: the rules change every future decision - the
+operator reads the validated pack before installing it.
 
 ## Writer's discipline (for agents especially)
 

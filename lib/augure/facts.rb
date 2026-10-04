@@ -95,6 +95,15 @@ module Augure
       end
 
       check_types(name, args, 0)
+      # the atom grammar is the load-bearing wall: a symbol name from an
+      # untrusted binary (win_symbol) or a version string from a hostile
+      # banner (software_version) must not carry quotes, backslashes,
+      # parens or newlines into a re-parsed facts file
+      args.each do |arg|
+        next unless arg.is_a?(String) && arg.match?(/["\\()\n\r]/)
+
+        raise MalformedFact, "#{name}: fact atoms may not contain quotes, backslashes, parens or newlines"
+      end
       (@rels[name] ||= []) << args
       self
     end
