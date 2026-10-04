@@ -7,7 +7,7 @@ module AugureProfiler
   # to assemble and how wide the return address is.
   def self.arch(path)
     elf = Metasm::ELF.decode_file(path)
-    elf.header.e_class.to_s == "64" ? :x64 : :x86
+    (elf.header.e_class.to_s == "64") ? :x64 : :x86
   end
 
   # The payload source: assembly TEXT, versioned and auditable, assembled

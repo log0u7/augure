@@ -2,6 +2,7 @@
 
 require "metasm"
 require "augure-profiler/shellcode"
+require_relative "support/binary_builder"
 require "open3"
 require "tmpdir"
 
