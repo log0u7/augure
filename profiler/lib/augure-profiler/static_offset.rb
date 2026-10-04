@@ -64,7 +64,6 @@ module AugureProfiler
         sink = name
         break
       end
-      warn "DBG net: call_site=#{call_site.inspect} sink=#{sink.inspect} instrs=#{instrs.size} unsafe=#{@unsafe_addrs.inspect}"
       call_idx = instrs.index do |_a, instr|
         next false unless instr.opname == "call"
 
