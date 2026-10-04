@@ -38,6 +38,7 @@ vuln_hint("unsafe_func:gets").
 | Predicate | Arity | Arg types | Meaning |
 |---|---|---|---|
 | `nx` | 1 | string | data execution prevention (`"true"`/`"false"`) |
+| `win_symbol` | 2 | string, integer | the winning function's name and address (emitted by the profiler) |
 | `pie` | 1 | string | position-independent executable |
 | `canary` | 1 | string | stack canary present |
 | `relro` | 1 | string | `"none"`, `"partial"`, `"full"` |

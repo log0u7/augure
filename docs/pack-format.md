@@ -45,7 +45,7 @@ priors: [14, 6]                  # Beta(alpha, beta): mean 0.7 here
 
 1. **Condition vocabulary**: only `fact`, `not_fact`, `match`, `cmp`.
    Anything else - including "clever" ones - is refused.
-2. **Existing predicates only**: your conditions may reference the 26
+2. **Existing predicates only**: your conditions may reference the 27
    input facts (see `docs/reference.md#schema` - the binary vocabulary:
    nx/pie/canary/plt/gadget...; the network vocabulary, emitted from
    nmap scans: service/software_version/remote; the confidence marker:

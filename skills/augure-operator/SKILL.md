@@ -19,7 +19,7 @@ description: Operate the augure/lictor auditable exploitation decision layer - v
 - You improvise BETWEEN the steps (which binary, which input, what the
   crash means) - never against the rules.
 
-## The full chain (12 steps, all recorded in the trail)
+## The full chain (13 steps, all recorded in the trail)
 
 ```sh
 lictor init                                 # fresh setup (scaffolds config)
@@ -30,6 +30,7 @@ lictor fuzz <binary>                        # discovery: sweep + triage -> facts
 lictor verify <target> --input crash-input.bin  # the differential: remote-verified
 lictor suggest <facts> "plt(\"system\")."    # propose observations, augure re-decides (delta back)
 lictor plan <binary-or-facts> -a targets.yml [--json]   # decide (schema: augure/decision@1)
+lictor build <binary> --facts <facts>       # MEASURED offset + fact-sourced return -> payload file
 lictor authorize <target>                   # the operator TYPES the target -> token (15 min)
 lictor run <target> --facts <f> -a targets.yml --executor ronin --consent-token <t>
                                             # decide -> execute -> outcome -> re-decide
@@ -53,7 +54,7 @@ you are missing before doubting the rule.
    substance, keep the structure.
 3. Conditions: ONLY `[fact, rel, val]`, `[not_fact, rel, val]` (input
    facts only), `[match, rel, idx, pattern]`, `[cmp, rel, op, n]`.
-   Predicates: the 26 input facts (binary vocabulary + the network
+   Predicates: the 27 input facts (binary vocabulary + the network
    vocabulary from nmap scans: service/software_version/remote; the
    confidence marker: verified) + built-in derived relations. Nothing
    invented.
