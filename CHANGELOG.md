@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- The shipped `augure` gem now carries the packs, the example fact bases, the docs and the `augure-benchmark` executable (previously checkout-only: consumers could not reproduce the headline concordance claim from an installed gem). `augure-profiler` gets its first real version (0.0.1), a bounded `augure ~> 0.1` dependency and a changelog_uri. Doc drift fixed: 31 input facts, 33 corpus targets, `leaked_address` in the schema table, `#ranking_of` documented.
 - `GadgetHunt.hunt` was O(n^2) in memory traffic: at every offset it copied the remaining section bytes into a fresh EncodedData (~512 GB cumulative for a 1 MB .text). One EncodedData per section now, decoding moves `edata.ptr` instead of copying; the per-decode rescue narrows to DecodeError/ParseError so metasm internal bugs surface instead of masquerading as "not a gadget". Same gadget sets: ROP Emporium parity 8/8, write4 multi-instruction gadgets intact.
 - `Pipeline.analyze` no longer accepts `solver:`: the parameter was accepted and never used, so the API pretended the decision ran an SMT solver while `verify` is the arithmetic feasibility check. The SMT path stays a tested seam (Verifier.payload_fits_smtlib + SmtProcess) wired by consumers who need it; the docstring, reference.md and the new regression spec say so.
 - `Mcts.terminal?` hardcoded `shell`: a pack declaring `terminal: true` (orw provides `flag_read`) could never terminate a plan, so pack-authored terminal semantics - validated by the armor, stored by `merged_model` - were ignored and plans ran on toward a shell the technique never delivers. The model's terminal stages now own the semantics; the built-in model (all terminals provide `shell`) behaves identically, 33/33 concordance.
@@ -85,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   provenance, Bandit (seeded Thompson sampling), MCTS planner, KnowledgeBase
   (TF-IDF + prior calibration), Verifier with SMT-LIB subprocess boundary,
   Pipeline facade and `augure analyze` CLI.
-- CTF benchmark corpus: 34 targets across ROP Emporium, Protostar, Phoenix
+- CTF benchmark corpus: 33 targets across ROP Emporium, Protostar, Phoenix
   and pwnable-style suites; 5 MCTS planning scenarios; byte-identical parity
   with the frozen Python engine (24/24 classification, 5/5 plans).
 - Extended technique vocabulary, all documented by public suites:

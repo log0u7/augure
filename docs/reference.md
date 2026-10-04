@@ -40,6 +40,7 @@ vuln_hint("unsafe_func:gets").
 | `nx` | 1 | string | data execution prevention (`"true"`/`"false"`) |
 | `win_symbol` | 2 | string, integer | the winning function's name and address (emitted by the profiler) |
 | `crash_site` | 1 | string | the crash's identification: `ret` when the control is confirmed by the planted pattern |
+| `leaked_address` | 2 | string, integer | an address the service's own banner leaked (name + value, emitted by lictor's harvest) |
 | `vuln_function` | 1 | string | the vulnerable function the static frame read named |
 | `sink` | 1 | string | the unsafe sink (strcpy, gets, ...) the static read identified |
 | `pie` | 1 | string | position-independent executable |
@@ -140,7 +141,7 @@ stderr names the line).
 - `#arm(tech) -> Arm` (auto-arms unknown with (1, 1))
 - `#select(verified) -> String | nil` - Thompson sample argmax.
 - `#feedback(tech, success)` - updates posterior, logs history.
-- `#rankings -> [String]` - prior-mean order, deterministic.
+- `#ranking_of(techniques) -> [String]` - prior-mean order, deterministic (the method the corpus freezes; `#rankings` draws Thompson samples).
 
 ### `Augure::Mcts`
 - `.plan(allowed, iterations: 2000, seed:) -> [first_move, path]`

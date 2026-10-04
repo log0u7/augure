@@ -13,8 +13,8 @@ PATH
 PATH
   remote: profiler
   specs:
-    augure-profiler (0.0.0)
-      augure
+    augure-profiler (0.0.1)
+      augure (~> 0.1)
       metasm (~> 1.0)
 
 GEM

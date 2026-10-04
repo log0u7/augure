@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
 
   spec.files = Dir.glob(File.expand_path("lib", __dir__) + "/**/*.rb") + [File.expand_path("exe/augure-profile", __dir__)]
   spec.bindir = "exe"
@@ -26,6 +27,6 @@ Gem::Specification.new do |spec|
 
   # metasm is LGPL-2.1, pure Ruby, maintained under jjyg. Isolating it in
   # this gem keeps the augure core at zero runtime dependencies.
-  spec.add_dependency "augure", ">= 0.0.0"
+  spec.add_dependency "augure", "~> 0.1"
   spec.add_dependency "metasm", "~> 1.0"
 end

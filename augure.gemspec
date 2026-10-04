@@ -21,8 +21,8 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
 
-  spec.files = Dir.glob(File.expand_path("lib", __dir__) + "/**/*.rb") + Dir.glob(File.expand_path("lib", __dir__) + "/**/*.json") + ["LICENSE", "README.md"] + [File.expand_path("exe/augure", __dir__)]
+  spec.files = Dir.glob(File.expand_path("lib", __dir__) + "/**/*.rb") + Dir.glob(File.expand_path("lib", __dir__) + "/**/*.json") + Dir.glob(File.expand_path("packs", __dir__) + "/*.yml") + Dir.glob(File.expand_path("examples", __dir__) + "/*.facts") + Dir.glob(File.expand_path("docs", __dir__) + "**/*.md") + ["LICENSE", "README.md", "CHANGELOG.md"] + [File.expand_path("exe/augure", __dir__), File.expand_path("exe/augure-benchmark", __dir__)]
   spec.bindir = "exe"
-  spec.executables = ["augure"]
+  spec.executables = %w[augure augure-benchmark]
   spec.require_paths = ["lib"]
 end

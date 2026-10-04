@@ -99,7 +99,7 @@ graph LR
 - **One vocabulary.** A technique rule is written once; red side proves it
   fires, blue side proves it hurts, purple side keeps both proofs in one
   repo.
-- **The corpus is double-sided.** The 34 frozen CTF targets are offensive
+- **The corpus is double-sided.** The 33 frozen CTF targets are offensive
   regression tests *and* detection validation targets: when blue adds a
   control, re-run the corpus, and the rules that fell are the measured
   progress.
