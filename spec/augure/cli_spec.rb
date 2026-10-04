@@ -52,3 +52,23 @@ RSpec.describe "exe/augure" do
     end
   end
 end
+
+RSpec.describe "the seeded selection is deterministic" do
+  let(:split_entry) do
+    corpus = JSON.parse(File.read(File.join(__dir__, "../../lib/augure/ctf_corpus.json")))
+    corpus["suites"]["ropemporium"].find { |e| e["name"] == "split" }
+  end
+
+  it "replays the same decision for the same seed - the audit promise" do
+    picks = 5.times.map do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, "split.facts")
+        File.write(path, split_entry["facts"])
+        stdout, = Open3.capture3(File.expand_path("../../exe/augure", __dir__),
+          "analyze", path, "--json", "--seed", "42")
+        JSON.parse(stdout)["selected"]
+      end
+    end
+    expect(picks.uniq).to eq(picks)
+  end
+end

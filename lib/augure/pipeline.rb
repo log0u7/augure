@@ -32,7 +32,9 @@ module Augure
 
       verified = verify(applicable, facts: facts, solver: solver, buffer_size: buffer_size)
 
-      bandit = selector(priors: effective_priors)
+      # The seed drives the WHOLE draw, selection included: a decision
+      # replayed with the same seed must select the same technique.
+      bandit = selector(priors: effective_priors, rng: seed ? Random.new(seed) : nil)
       ranking = bandit.ranking_of(applicable)
       candidates = verified.select { |_, v| v[:status] == :sat }.keys
       selected = bandit.select(candidates.empty? ? applicable : candidates)
@@ -52,8 +54,8 @@ module Augure
     end
 
     # The selector every consumer shares: AG inversions + KB-informed priors.
-    def selector(priors: nil)
-      Bandit.new(priors: priors || default_priors)
+    def selector(priors: nil, rng: nil)
+      Bandit.new(priors: priors || default_priors, rng: rng || Random.new)
     end
 
     def default_priors
