@@ -53,3 +53,10 @@ RSpec.describe AugureProfiler::Shellcode do
     expect(a).to eq(b)
   end
 end
+
+RSpec.describe "AugureProfiler.arch" do
+  it "reads the ELF class of a target" do
+    dir = ProfilerBinaryBuilder.vulnerable
+    expect(AugureProfiler.arch(dir)).to eq(:x64)
+  end
+end
