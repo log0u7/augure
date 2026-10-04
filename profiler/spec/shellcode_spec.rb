@@ -40,8 +40,8 @@ RSpec.describe AugureProfiler::Shellcode do
   end
 
   it "carries the call-back layout: the stub pops the path address it pushed" do
-    [:sh, :bash].each do |stub_name|
-      [:x64, :x86].each do |arch|
+    %i[sh bash].each do |stub_name|
+      %i[x64 x86].each do |arch|
         bytes = described_class.generate((arch == :x64) ? Metasm::X64 : Metasm::Ia32, stub_name)
         expect(bytes.bytes.first).to eq(0xE8), "#{stub_name}_#{arch} must start with call (e8), not jmp"
       end
@@ -86,6 +86,29 @@ RSpec.describe "the ghost-writing variants" do
     b = AugureProfiler::Shellcode.generate(Metasm::X64, :sh, rng: Random.new(7))
     expect(a).to eq(b)
   end
+
+  it "x86 seeds assemble valid 32-bit code, deterministic per seed" do
+    # the live-run proof needs a 32-bit runner (gcc -m32, multilib);
+    # without it the 64-bit runner cannot execute 32-bit stubs (the
+    # pop truncates the stack pointer) - so the x86 proof is: the
+    # polymorph does not crash, the bytes decode, the seed replays.
+    forms = (1..5).map { |seed| AugureProfiler::Shellcode.generate(Metasm::Ia32, :sh, rng: Random.new(seed)) }
+    again = (1..5).map { |seed| AugureProfiler::Shellcode.generate(Metasm::Ia32, :sh, rng: Random.new(seed)) }
+    expect(forms).to eq(again)
+    forms.each do |bytes|
+      expect(bytes).to include("\xcd\x80".b)
+      di = Metasm::Ia32.new.decode_instruction(Metasm::EncodedData.new(bytes), 0)
+      expect(di).not_to be_nil
+    end
+  end
+
+  it "x86 orw polymorphs without crashing" do
+    flag = File.join(Dir.mktmpdir, "flag")
+    File.write(flag, "FLAG{x86_polymorph}")
+    stub = AugureProfiler::Shellcode.generate(Metasm::Ia32, :orw, path: flag, rng: Random.new(3))
+    expect(stub).to include("\xcd\x80".b)
+    expect(stub.bytesize).to be < 200
+  end
 end
 
 RSpec.describe "the parametrized stubs" do
@@ -108,9 +131,9 @@ RSpec.describe "the parametrized stubs" do
   end
 
   it "refuses a path-bearing stub assembled without its path" do
-    expect {
+    expect do
       AugureProfiler::Shellcode.generate(Metasm::X64, :orw)
-    }.to raise_error(ArgumentError, /path/)
+    end.to raise_error(ArgumentError, /path/)
   end
 end
 

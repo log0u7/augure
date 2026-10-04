@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- `Shellcode.generate` on Ia32 with a seeded rng crashed (`zero_esi` pool had no x86 key while every x86 stub zeroes `ecx`); the pool is now `zero_ecx`, and the x86 seeds are regression-tested (assembly + decode validity; the live-run proof stays x64 - a 32-bit runner needs gcc multilib).
 
 ### Fixed
 
