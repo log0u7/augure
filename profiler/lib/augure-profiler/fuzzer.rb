@@ -199,8 +199,12 @@ module AugureProfiler
     def gdb_triage(binary, input)
       input_file = File.join(Dir.tmpdir, "augure_fuzz_input_#{Process.pid}")
       File.binwrite(input_file, input)
+      # DEBUGINFOD_URLS empty: gdb's debuginfo auto-download queries the
+      # network and turns every batch run into a minutes-long stall (the
+      # CI triage went 180s per example on it).
       out, _err, _status = Open3.capture3(
-        "gdb", "-batch", "-ex", "run < #{input_file}", "-ex", "info registers",
+        {"DEBUGINFOD_URLS" => ""}, "gdb", "-batch",
+        "-ex", "run < #{input_file}", "-ex", "info registers",
         "-ex", "x/i $pc", binary
       )
       parse_gdb(out)
