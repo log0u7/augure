@@ -33,14 +33,12 @@ because it generates text, not proofs. Augure generates proofs, not text:
 
 ## A lineage, published
 
-The engine stands on a documented line: **metasm** (Y. Guillot, SSTIC
-2007), semi-automatic binary deprotection (Guillot & Gazet, SSTIC
-2008), automatic exploitation with metasm (esec-lab, 2010), **miasm**
-(C. Desclaux, SSTIC 2012 - the Python successor; the strategy-sim
-prototype carries a miasm profiler and its docstring says "Python
-equivalent of Metasm", literally), and the ghost-writing shellcode
-technique (screwnomore, 2015). The papers are linked in
-[docs/build-format.md](docs/build-format.md).
+metasm (SSTIC 2007), the semi-automatic deprotection (SSTIC 2008),
+automatic exploitation (esec-lab, 2010), miasm (SSTIC 2012 - the
+strategy-sim prototype carries a miasm profiler) and the ghost-writing
+technique (2015): the papers and where this project stands on them live
+in [docs/build-format.md](docs/build-format.md).
+
 ## Why it exists
 
 When an exploit developer picks a technique - *"this is a ret2libc situation"* -
