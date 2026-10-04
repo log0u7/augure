@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-require 'metasm'
+require "metasm"
 
 module AugureProfiler
   # The target's word size, from the ELF class: which shellcode variant
   # to assemble and how wide the return address is.
   def self.arch(path)
     elf = Metasm::ELF.decode_file(path)
-    elf.header.e_class.to_s == '64' ? :x64 : :x86
+    (elf.header.e_class.to_s == "64") ? :x64 : :x86
   end
 
   # The payload source: assembly TEXT, versioned and auditable, assembled
@@ -122,7 +122,7 @@ module AugureProfiler
     # klass: Metasm::X64 or Metasm::Ia32 (the target architecture).
     # Returns the assembled bytes.
     def self.generate(klass, stub = :sh, rng: nil)
-      arch = klass == Metasm::X64 ? :x64 : :x86
+      arch = (klass == Metasm::X64) ? :x64 : :x86
       variants = SOURCES.fetch(stub).fetch(arch)
       source = rng ? variants.sample(random: rng) : variants.first
       Metasm::Shellcode.assemble(klass.new, source).encode_string

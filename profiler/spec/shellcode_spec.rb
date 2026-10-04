@@ -74,7 +74,7 @@ RSpec.describe "the ghost-writing variants" do
 
   it "every seed picks an equivalent stub that actually runs" do
     [1, 2, 3, 4, 5].each do |seed|
-      stub = described_class.generate(Metasm::X64, :sh, rng: Random.new(seed))
+      stub = AugureProfiler::Shellcode.generate(Metasm::X64, :sh, rng: Random.new(seed))
       out, err, status = Open3.capture3(runner, stdin_data: stub + "exit\n")
       expect(status.success?).to be(true), "seed #{seed} crashed: #{err[0, 120]}"
       expect(out + err).not_to match(/Segmentation|erreur de segmentation/i)
@@ -82,8 +82,8 @@ RSpec.describe "the ghost-writing variants" do
   end
 
   it "is deterministic per seed" do
-    a = described_class.generate(Metasm::X64, :sh, rng: Random.new(7))
-    b = described_class.generate(Metasm::X64, :sh, rng: Random.new(7))
+    a = AugureProfiler::Shellcode.generate(Metasm::X64, :sh, rng: Random.new(7))
+    b = AugureProfiler::Shellcode.generate(Metasm::X64, :sh, rng: Random.new(7))
     expect(a).to eq(b)
   end
 end
