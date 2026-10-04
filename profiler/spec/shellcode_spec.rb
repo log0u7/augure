@@ -61,3 +61,29 @@ RSpec.describe "AugureProfiler.arch" do
     expect(AugureProfiler.arch(dir)).to eq(:x64)
   end
 end
+
+RSpec.describe "the ghost-writing variants" do
+  let(:runner) do
+    exe = File.join(Dir.mktmpdir, "sc_runner2")
+    src = File.expand_path("support/sc_runner.c", __dir__)
+    _, err, status = Open3.capture3("gcc", "-o", exe, src)
+    raise "sc_runner build failed: #{err}" unless status.success?
+
+    exe
+  end
+
+  it "every seed picks an equivalent stub that actually runs" do
+    [1, 2, 3, 4, 5].each do |seed|
+      stub = described_class.generate(Metasm::X64, :sh, rng: Random.new(seed))
+      out, err, status = Open3.capture3(runner, stdin_data: stub + "exit\n")
+      expect(status.success?).to be(true), "seed #{seed} crashed: #{err[0, 120]}"
+      expect(out + err).not_to match(/Segmentation|erreur de segmentation/i)
+    end
+  end
+
+  it "is deterministic per seed" do
+    a = described_class.generate(Metasm::X64, :sh, rng: Random.new(7))
+    b = described_class.generate(Metasm::X64, :sh, rng: Random.new(7))
+    expect(a).to eq(b)
+  end
+end

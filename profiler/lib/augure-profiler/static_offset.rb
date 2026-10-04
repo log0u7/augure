@@ -157,5 +157,65 @@ module AugureProfiler
       end
       stubs
     end
+  # Gadget honesty: a fact claims "at this address there is a ret" -
+  # re-decode the bytes and confirm the claim before anything consumes
+  # it. A lying gadget (wrong address, mid-instruction c3) is refused.
+  # Returns true when the decoded chain matches the type's semantics.
+  def self.verify_gadget(path, type, addr)
+    elf = Metasm::ELF.decode_file(path)
+    sec = elf.sections.find do |s|
+      s.flags.map(&:to_s).include?("EXECINSTR") &&
+        addr.to_i >= s.addr.to_i && addr.to_i < s.addr.to_i + s.size.to_i
+    end
+    return false unless sec
+
+    arch = (elf.header.e_class.to_s == "64") ? :x64 : :x86
+    cpu = arch == :x64 ? Metasm::X64.new : Metasm::Ia32.new
+    data = section_data(path, sec)
+    sc = Metasm::Shellcode.new(cpu)
+    sc.base_addr = sec.addr.to_i
+    sc.encoded = Metasm::EncodedData.new(data)
+    ds = sc.disassemble(addr.to_i)
+    di = ds.di_at(addr.to_i)
+    return false unless di
+
+    expected = expected_chain(type, arch)
+    return false if expected.empty?
+
+    cur = addr.to_i
+    expected.each do |want|
+      di = ds.di_at(cur) || (ds.disassemble(cur) && ds.di_at(cur))
+      return false unless di
+
+      instr = di.instruction.to_s
+      case want
+      when /\Apop (.+)\z/
+        return false unless di.instruction.opname == "pop" && di.instruction.args.first.to_s == Regexp.last_match(1)
+      when /\Ajmp (.+)\z/
+        return false unless di.instruction.opname == "jmp" && instr.include?(Regexp.last_match(1))
+      else
+        return false unless instr == want || instr.start_with?(want)
+      end
+      cur += di.bin_length.to_i
+    end
+    true
+  rescue Metasm::ParseError, Metasm::InvalidExeFormat
+    false
+  end
+
+  def self.expected_chain(type, arch)
+    sp = arch == :x64 ? "rsp" : "esp"
+    case type
+    when "ret_align" then ["ret"]
+    when "jmp_rsp" then ["jmp rsp"]
+    when "jmp_esp" then ["jmp esp"]
+    when "syscall_ret" then ["syscall", "ret"]
+    when "int80_ret" then ["int"]
+    when /\Apop_.*_ret\z/
+      type.delete_prefix("pop_").delete_suffix("_ret").split("_").map { |r| "pop #{r}" } + ["ret"]
+    else
+      []
+    end
+  end
   end
 end
