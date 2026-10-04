@@ -104,6 +104,10 @@ module AugureProfiler
               push 1
               pop rax
               syscall
+              push 60
+              pop rax
+              xor edi, edi
+              syscall
           ASM
         ],
         x86: [
