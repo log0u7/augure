@@ -91,6 +91,10 @@ module AugureProfiler
       end
     end
 
+    def arch_index
+      @elf.header.e_class.to_s == "64" ? 0 : 1
+    end
+
     def plt_symbol?(name)
       name =~ /\A[a-zA-Z_][a-zA-Z0-9_]*\z/ && !name.start_with?("__")
     end
@@ -100,9 +104,11 @@ module AugureProfiler
         bytes = section_bytes(section)
         next if bytes.nil? || bytes.empty?
 
-        stack_jump = (@elf.header.e_class.to_s == "64") ? "jmp_rsp" : "jmp_esp"
+        stack_jump = %w[jmp_rsp jmp_esp][arch_index]
         scan_gadgets(bytes, section.addr.to_i).each do |(type, addr)|
-          facts.add("gadget", type == "JMP_STACK" ? stack_jump : type, addr)
+          name = type
+          name = stack_jump if type == "JMP_STACK"
+          facts.add("gadget", name, addr)
         end
       end
       emit_csu_gadgets(facts)
