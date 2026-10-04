@@ -32,6 +32,25 @@ RSpec.describe AugureProfiler::Profiler do
       expect(facts.rel("plt")).to include(["gets"])
       expect(facts.rel("vuln_hint")).to include(["unsafe_func:gets"])
     end
+
+    it "does NOT emit plt for a local function named like an import" do
+      # the ret2plt trap: plt("system") on a local function makes the
+      # decision layer believe a PLT stub exists that does not
+      local = BinaryBuilder.local_system
+      facts = described_class.new(local).facts
+      names = facts.rel("plt").map(&:first)
+      expect(names).not_to include("system")
+      expect(names).to include("__libc_start_main") # a real import stays
+    end
+
+    it "does not emit plt for internal non-function symbols" do
+      # main/_start/_DYNAMIC/etc. are not imports even when
+      # identifier-shaped
+      facts = described_class.new(vuln).facts
+      names = facts.rel("plt").map(&:first)
+      expect(names).not_to include("main", "_start", "_DYNAMIC", "data_start")
+      expect(names).to all(match(/\A[a-zA-Z_][a-zA-Z0-9_]*\z/))
+    end
   end
 
   describe "gadget enumeration" do

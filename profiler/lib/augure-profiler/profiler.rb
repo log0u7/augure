@@ -70,7 +70,13 @@ module AugureProfiler
 
     def emit_symbols(facts)
       names = @elf.symbols.map(&:name).compact.uniq
-      names.each { |n| facts.add("plt", n) if plt_symbol?(n) }
+      # plt facts describe REAL dynamic imports (shndx == UNDEF, FUNC
+      # type) - not any identifier-shaped symbol: a local function
+      # named `system` must not make the decision layer believe a PLT
+      # stub exists.
+      @elf.symbols.each do |sym|
+        facts.add("plt", sym.name) if plt_symbol?(sym)
+      end
       names.each do |n|
         facts.add("vuln_hint", "unsafe_func:#{n}") if UNSAFE_SYMBOLS.include?(n)
       end
@@ -95,8 +101,9 @@ module AugureProfiler
       (@elf.header.e_class.to_s == "64") ? 0 : 1
     end
 
-    def plt_symbol?(name)
-      name =~ /\A[a-zA-Z_][a-zA-Z0-9_]*\z/ && !name.start_with?("__")
+    def plt_symbol?(sym)
+      sym.name.to_s =~ /\A[a-zA-Z_][a-zA-Z0-9_]*\z/ &&
+        sym.shndx.to_s == "UNDEF" && sym.type.to_s == "FUNC"
     end
 
     def emit_gadgets(facts)
@@ -152,11 +159,11 @@ module AugureProfiler
     # well-known symbols; their presence IS the gadget fact.
     def emit_csu_gadgets(facts)
       names = @elf.symbols.map(&:name).compact
-      if names.include?("__libc_csu_init")
-        sym = @elf.symbols.find { |s| s.name == "__libc_csu_init" }
-        facts.add("gadget", "csu_popper", sym.value.to_i)
-        facts.add("gadget", "csu_mov", sym.value.to_i + 0x40)
-      end
+      return unless names.include?("__libc_csu_init")
+
+      sym = @elf.symbols.find { |s| s.name == "__libc_csu_init" }
+      facts.add("gadget", "csu_popper", sym.value.to_i)
+      facts.add("gadget", "csu_mov", sym.value.to_i + 0x40)
     end
   end
 end

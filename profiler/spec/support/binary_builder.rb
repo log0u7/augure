@@ -30,6 +30,24 @@ module ProfilerBinaryBuilder
     bin = File.join(dir, "vuln_input")
     _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-z", "execstack", "-O0")
     raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
+  def local_system(dir = Dir.mktmpdir("augure_local"))
+    # a binary whose ONLY interesting symbol is a LOCAL function named
+    # exactly `system`: the ret2plt trap - if the profiler emits
+    # plt("system") for a non-import, the decision layer believes a
+    # PLT stub exists that does not.
+    src = File.join(dir, "local_system.c")
+    File.write(src, <<~C)
+      __attribute__((noinline)) int system(int a) { return a + 1; }
+      int main(void) { return system(41) - 41; }
+    C
+    bin = File.join(dir, "local_system")
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-O0")
+    raise "build failed: #{err}" unless status.success?
+
     bin
   end
 end
