@@ -45,3 +45,20 @@ RSpec.describe "the crash identification" do
     expect(facts[:crash_site]).to eq("unknown")
   end
 end
+
+RSpec.describe AugureProfiler::DynamicTrace do
+  let(:fixture) { ProfilerBinaryBuilder.vulnerable }
+
+  it "proves the write site: the pattern lands at the return slot" do
+    site = described_class.write_site(fixture, "A" * 200)
+    expect(site[:caller]).to eq("vuln_copy")
+    expect(site[:sink]).to eq("strcpy")
+    expect(site[:instruction]).to match(/0x[0-9a-f]+/)
+  end
+
+  it "maps the runtime decor: the stack is there" do
+    map = described_class.runtime_map(fixture)
+    expect(map[:stack_base]).to be > 0
+    expect(map[:stack_end]).to be > map[:stack_base]
+  end
+end
