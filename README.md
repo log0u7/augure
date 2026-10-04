@@ -30,6 +30,17 @@ because it generates text, not proofs. Augure generates proofs, not text:
   which facts justified it, which Beta prior and which seeded draw ranked it.
   Same input + same seed = same decision. Always.
 
+
+## A lineage, published
+
+The engine stands on a documented line: **metasm** (Y. Guillot, SSTIC
+2007), semi-automatic binary deprotection (Guillot & Gazet, SSTIC
+2008), automatic exploitation with metasm (esec-lab, 2010), **miasm**
+(C. Desclaux, SSTIC 2012 - the Python successor; the strategy-sim
+prototype carries a miasm profiler and its docstring says "Python
+equivalent of Metasm", literally), and the ghost-writing shellcode
+technique (screwnomore, 2015). The papers are linked in
+[docs/build-format.md](docs/build-format.md).
 ## Why it exists
 
 When an exploit developer picks a technique - *"this is a ret2libc situation"* -

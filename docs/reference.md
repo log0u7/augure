@@ -39,6 +39,9 @@ vuln_hint("unsafe_func:gets").
 |---|---|---|---|
 | `nx` | 1 | string | data execution prevention (`"true"`/`"false"`) |
 | `win_symbol` | 2 | string, integer | the winning function's name and address (emitted by the profiler) |
+| `crash_site` | 1 | string | the crash's identification: `ret` when the control is confirmed by the planted pattern |
+| `vuln_function` | 1 | string | the vulnerable function the static frame read named |
+| `sink` | 1 | string | the unsafe sink (strcpy, gets, ...) the static read identified |
 | `pie` | 1 | string | position-independent executable |
 | `canary` | 1 | string | stack canary present |
 | `relro` | 1 | string | `"none"`, `"partial"`, `"full"` |
