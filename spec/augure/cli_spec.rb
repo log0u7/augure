@@ -69,6 +69,6 @@ RSpec.describe "the seeded selection is deterministic" do
         JSON.parse(stdout)["selected"]
       end
     end
-    expect(picks.uniq).to eq(picks)
+    expect(picks.uniq.size).to eq(1)
   end
 end
