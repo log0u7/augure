@@ -49,15 +49,19 @@ module Augure
         ranking: ranking.map(&:first),
         selected: selected,
         plan: plan,
-        explain: { provenance: engine_result.provenance_by_head
-                                            .select { |head, _| head[0] == Rules::APPLICABLE }
-                                            .transform_keys { |head| head[1] }
-                                            .transform_values do |provs|
-          provs.map do |p|
-            { rule: p[:rule], evidence: p[:evidence], origin: p[:origin] }
-          end
-        end }
+        explain: { provenance: explain_provenance(engine_result) }
       }
+    end
+
+    # The explain payload: per applicable technique, the rules that
+    # fired it with their evidence (the audit contract).
+    def explain_provenance(engine_result)
+      heads = engine_result.provenance_by_head.select { |head, _| head[0] == Rules::APPLICABLE }
+      heads.transform_keys { |head| head[1] }.transform_values do |provs|
+        provs.map do |p|
+          { rule: p[:rule], evidence: p[:evidence], origin: p[:origin] }
+        end
+      end
     end
 
     # The selector every consumer shares: AG inversions + KB-informed priors.
