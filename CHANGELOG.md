@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The general gadget hunter: every ret-terminated chain in the
+  executable sections, semantically classified - write4 yields
+  seventeen gadgets the byte patterns never saw (pop_r14_r15_ret, the
+  multi-pop families).
+- The parametrized shellcode: execve of a chosen path, and the orw
+  chain (open/read/write, no execve) for the seccomp answer - the x64
+  stub reads and prints a real flag file in the suite.
+- The ghost-writing pools: the zeroing, the call-number and the
+  camouflage equivalents picked per seed - ten seeds, ten living
+  stubs, deterministic.
+- The encoders: the keyed self-decoder with the backward-call get-pc
+  (zero-free by construction), the xor and the polymorphic flavours,
+  both live-tested through a 00/41/0a/0d channel; a payload wider than
+  120 bytes on a 0x00 channel is refused honestly.
+- The dynamic layer: the write-site proof (the watchpoint catches the
+  instruction that plants the overflow), the runtime map (libc, stack),
+  and the crash identification (vuln_function, sink, crash_site).
 - Static parity on the real binaries: a CI job downloads the eight
   sha256-pinned ROP Emporium x64 binaries, profiles binary + shipped
   libraries, and asserts every statically-derivable corpus claim

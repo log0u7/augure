@@ -68,6 +68,20 @@ existing predicates. A refused layout never reaches the builder.
 4. **The crash identification**: the static side names the vulnerable
    function and its sink; the control evidence is the known pattern
    found in the registers - exact, not inferred from 0x41414141 shapes.
+5. **The general gadget hunt**: every offset of the executable
+   sections, a decoded chain ending on ret, classified semantically -
+   the multi-instruction gadgets (pop rsi; pop r15; ret) the byte
+   patterns never see.
+6. **The dynamic layer**: the write-site proof (a watchpoint on the
+   return slot catches the instruction that plants the overflow - the
+   taint proven, not inferred), the runtime map (libc, stack of a live
+   run), and lictor's harvest (the service's banner becomes
+   leaked_address facts).
+7. **The encoders**: the keyed self-decoder with the backward-call
+   get-pc (a negative rel32 carries ff bytes, never 00), the payload
+   nop-padded under 128 bytes, the keys per seed. The shikata
+   inheritance, auditable: the seed reproduces the exact bytes. A
+   payload wider than 120 bytes on a 0x00 channel is refused honestly.
 
 No emulation: the suite's live-execution tests are the truth.
 
