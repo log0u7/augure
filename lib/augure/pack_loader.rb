@@ -28,6 +28,18 @@ module Augure
         before = Pipeline.analyze(facts: entry["facts"], priors: base_priors, plan: false)
         after = Pipeline.analyze(facts: entry["facts"], priors: priors_with(packs, base_priors),
           packs: packs, plan: false)
+        # A documented pack verdict is not a mover: the frozen entry may
+        # say the built-in table has no answer for this target AND the
+        # pack layer does (entry["pack_verdict"]) - the guard then
+        # checks the pack answer ARRIVES, not that nothing changed. The
+        # check holds only when that pack is among the loaded ones.
+        if entry["pack_verdict"] && packs.any? { |p| p.technique == entry["pack_verdict"] }
+          after[:ranking].first == entry["pack_verdict"] ? next :
+            (raise PackError,
+              "corpus guard: pack(s) #{packs.map(&:technique).join(", ")} fail the documented " \
+              "pack verdict on #{entry["suite"]}/#{entry["name"]} " \
+              "(expected #{entry["pack_verdict"]}, got #{after[:ranking].first}) - refused")
+        end
         # Additive packs may extend applicable/ranking with NEW techniques
         # below the documented top - what they must never do: (1) move an
         # EXISTING technique's order, (2) take the top-1 of a DOCUMENTED

@@ -458,7 +458,8 @@
         "applicable": [],
         "ranked": [],
         "selected": null,
-        "truth": "orw (the pack layer's answer; not in the built-in table)"
+        "truth": "orw",
+        "pack_verdict": "orw"
       },
       {
         "suite": "pwnable",
