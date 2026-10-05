@@ -3,13 +3,20 @@ author: Gregory Epp
 source: https://ctf-wiki.org/pwn/linux/user-mode/sandbox/seccomp/c-sandbox-escape/
 
 rules:
-  - id: app_orw
+  # sibling rules share the head: the OR the DSL expresses by
+  # splitting (the provenance carries every firing - engine B3).
+  # nx false: the stub rides the executable stack (the lab's case);
+  # nx true: the ROP path needs a syscall gadget in the binary.
+  - id: app_orw_stack
     head: [applicable, orw]
     conditions:
       - [fact, seccomp, true]
-    # nx is deliberately ABSENT: the stub placement adapts - nx false
-    # (execstack) rides the stack, nx true needs the operator's R-X
-    # page craft. The filter is the technique's reason to exist.
+      - [fact, nx, false]
+  - id: app_orw_rop
+    head: [applicable, orw]
+    conditions:
+      - [fact, seccomp, true]
+      - [fact, nx, true]
       - [fact, has_syscall_gadget, true]
 
 kb:
