@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+- The `cve` fact (the CVE/KEV bridge): an agent or the operator proposes the CVE id as a fact (`cve("CVE-2024-1234").`) - the technique packs consume it like any observation. The schema + the atom grammar treat it as any string fact.
 
 - The pack DSL gains an optional `build:` section (the pack teaching the BUILDER its assembly
   order): armor check 8 validates it (own technique, slot vocabulary), `pack.build` exposes it -

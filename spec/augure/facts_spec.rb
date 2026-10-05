@@ -77,6 +77,11 @@ RSpec.describe Augure::Facts do
         .to raise_error(Augure::MalformedFact, /string atom/)
     end
 
+    it "accepts the cve fact (the CVE/KEV bridge the agent proposes)" do
+      f = described_class.parse("cve(\"CVE-2024-1234\").\n")
+      expect(f.rel("cve")).to eq([["CVE-2024-1234"]])
+    end
+
     it "rejects values outside a closed value domain (a typo must not silence the rules)" do
       # nx("maybe") parses fine under a string-only schema, disables the
       # closed-world default, and every nx rule silently never fires.
