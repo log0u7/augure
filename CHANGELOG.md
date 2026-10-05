@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   newlines into a re-parsed facts file - the injected-facts decision
   manipulation is closed. The profiler's win regex is anchored.
 
-### Added
+- The pack DSL gains an optional `build:` section (the pack teaching the BUILDER its assembly order): armor check 8 validates it (own technique, slot vocabulary), `pack.build` exposes it - lictor's PayloadBuilder consumes it (packs teach, the builder follows, for real this time).
 - ADRs: docs/adr/ records the architectural decisions and renouncements - the arch abstraction before any port (0001), ARM64 deferred behind it (0002), PE/Mach-O out of scope for v0.x (0003).
 
 - The general gadget hunter: every ret-terminated chain in the

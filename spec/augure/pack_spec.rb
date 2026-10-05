@@ -50,6 +50,25 @@ RSpec.describe Augure::Pack do
         .to raise_error(Augure::PackError, /source/)
     end
 
+    it "exposes an optional build: section (packs teach, the builder follows)" do
+      with_build = pack_yaml("build" => {"technique" => "ret2csu_v2",
+                                         "layout" => [["padding"], ["qword", "gadget:pop_rdi_ret"], ["qword", "win"]]})
+      pack = described_class.load_hash(with_build)
+      expect(pack.build["technique"]).to eq("ret2csu_v2")
+      expect(pack.build["layout"]).to include(["qword", "win"])
+    end
+
+    it "rejects a build: section that mismatches the technique or uses unknown slots (check 8)" do
+      bad = pack_yaml("build" => {"technique" => "other_technique",
+                                  "layout" => [["padding"]]})
+      expect { described_class.load_hash(bad) }
+        .to raise_error(Augure::PackError, /build.*technique/)
+      bad["build"]["technique"] = "ret2csu_v2"
+      bad["build"]["layout"] = [["exec_system", "rm -rf /"]]
+      expect { described_class.load_hash(bad) }
+        .to raise_error(Augure::PackError, /build.*slot/)
+    end
+
     it "rejects a match pattern that is not a valid regex (check 7: fail at load)" do
       bad = pack_yaml
       bad["rules"][0]["conditions"][1] = ["match", "gadget", 0, "("]

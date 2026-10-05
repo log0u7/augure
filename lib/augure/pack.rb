@@ -18,7 +18,7 @@ module Augure
   class Pack
     CONDITION_VOCABULARY = %w[fact not_fact match cmp].freeze
 
-    attr_reader :technique, :author, :source, :rules, :kb, :mcts, :priors
+    attr_reader :technique, :author, :source, :rules, :kb, :mcts, :priors, :build
 
     def self.load_file(path)
       data = YAML.safe_load_file(path, permitted_classes: [], aliases: false)
@@ -64,6 +64,8 @@ module Augure
       validate_kb(@data["kb"])
       validate_mcts(@data["mcts"])
       validate_priors(@data["priors"])
+      validate_build(@data["build"])
+      build_rules
     end
 
     def known_predicates
@@ -158,7 +160,27 @@ module Augure
       reject "priors must be [alpha, beta] (two numbers)"
     end
 
-    def build
+    # armor check 8: the optional build: section (the pack teaching the
+    # BUILDER its assembly order) must name its own technique and use
+    # the slot vocabulary only. The consumer (lictor's PayloadBuilder)
+    # interprets the slots; here we gate the vocabulary.
+    BUILD_SLOTS = %w[padding qword dword shellcode].freeze
+
+    def validate_build(build)
+      return if build.nil?
+
+      unless build.is_a?(Hash) && build["technique"] == @technique
+        reject "build: must name its own technique (#{build.is_a?(Hash) ? build["technique"].inspect : "missing"})"
+      end
+      layout = build["layout"]
+      unless layout.is_a?(Array) && !layout.empty? &&
+          layout.all? { |slot| slot.is_a?(Array) && BUILD_SLOTS.include?(slot[0]) }
+        reject "build: layout must be a non-empty array of slots from #{BUILD_SLOTS.inspect}"
+      end
+      @build = build
+    end
+
+    def build_rules
       @rules = @data["rules"].map do |rule|
         conditions = rule["conditions"].map do |cond|
           normalized = cond.map do |v|

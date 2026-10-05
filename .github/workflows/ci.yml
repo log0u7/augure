@@ -34,6 +34,20 @@ jobs:
       - name: Static parity on the real ROP Emporium binaries (sha256-pinned)
         run: bundle exec ruby tools/parity_check.rb
 
+  gems:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: All three gems build (the release artifact is not a dead one)
+        run: |
+          gem build augure.gemspec
+          (cd profiler && gem build augure-profiler.gemspec)
+          (cd mcp_server && gem build augure-mcp.gemspec)
+
   concordance:
     runs-on: ubuntu-latest
     steps:
