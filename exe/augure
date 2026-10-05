@@ -15,6 +15,7 @@ parser = OptionParser.new do |opts|
 
     Usage:
       augure analyze <facts-file | -> [options]   decide on facts
+      augure coverage [options]                   the corpus read backwards (defender side)
       augure doctor                               verify the environment
       augure rules                                print the rules-as-data table
       augure explain <technique>                  rules + knowledge for one technique
@@ -25,6 +26,11 @@ parser = OptionParser.new do |opts|
   opts.on("-j", "--json", "Emit the decision as JSON (schema: augure/decision@1)") { options[:json] = true }
   opts.on("-s", "--seed N", Integer, "Seed for deterministic bandit/MCTS") { |n| options[:seed] = n }
   opts.on("--packs DIR", "Load technique packs (armor + corpus guard) for analyze/explain") { |v| options[:packs] = v }
+  opts.on("--flip NAME:VALUE", "Coverage: a hardening flip (nx:true, canary:true, relro:full; NAME:nil removes)") do |v|
+    name, value = v.split(":", 2)
+    (options[:flips] ||= {})[name] = ((value == "nil") ? nil : value)
+  end
+  opts.on("--facts FILE", "Coverage: one facts entry instead of the corpus") { |v| options[:facts_entry] = v }
   opts.on("--version", "Print the version") do
     puts VERSION_LINE
     exit 0
@@ -105,6 +111,30 @@ when "explain"
     puts "  kb:   #{e["id"]} (success_rate #{e["success_rate"]})"
     puts "        #{e["description"]}"
   end
+when "coverage"
+  entries = if options[:facts_entry]
+    [{"suite" => "facts", "name" => File.basename(options[:facts_entry]),
+      "facts" => File.read(options[:facts_entry])}]
+  else
+    corpus = JSON.parse(File.read(File.expand_path("../lib/augure/ctf_corpus.json", __dir__)))
+    corpus["suites"].values.flatten
+  end
+  unless options[:flips]
+    abort("augure: coverage needs at least one --flip NAME:VALUE (nx:true, canary:true, relro:full)")
+  end
+  report = Augure::Coverage.report(entries, flips: options[:flips])
+  if options[:json]
+    puts JSON.pretty_generate("schema" => "augure/coverage@1", **report)
+    exit 0
+  end
+  entries.size
+  report[:entries].count { |e| e[:lost].empty? && e[:gained].empty? }
+  puts "the corpus read backwards: #{entries.size} targets, flips #{options[:flips].inspect}"
+  puts "targets that change their applicable set: #{report[:entries].count { |e| e[:lost] || e[:gained] } - report[:entries].count { |e| e[:lost].empty? && e[:gained].empty? }}"
+  report[:died].each { |tech, n| puts "  died:    #{tech}  (#{n} target(s))" }
+  report[:gained].each { |tech, n| puts "  gained:  #{tech}  (#{n} target(s))" }
+  puts "untouched targets: #{report[:survived_count]}"
+  puts "the remaining applicable techniques are the attacker's next moves - harden accordingly."
 when "analyze"
   path = ARGV.shift or abort(parser.to_s)
   input = (path == "-") ? $stdin.read : File.read(path)
