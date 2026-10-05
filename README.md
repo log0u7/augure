@@ -31,15 +31,6 @@ because it generates text, not proofs. Augure generates proofs, not text:
   the Beta prior and the seeded draw that ranked it.
   Same input + same seed = same decision. Always.
 
-
-## A lineage, published
-
-metasm (SSTIC 2007), the semi-automatic deprotection (SSTIC 2008),
-automatic exploitation (esec-lab, 2010), miasm (SSTIC 2012 - the
-strategy-sim prototype carries a miasm profiler) and the ghost-writing
-technique (2015): the papers and where this project stands on them live
-in [docs/build-format.md](docs/build-format.md).
-
 ## Why it exists
 
 When an exploit developer picks a technique - *"this is a ret2libc situation"* -
@@ -214,6 +205,7 @@ deferred behind it (0002), PE/Windows out of scope for v0.x (0003).
 | align with ATT&CK (purple) | `augure rules --mitre --packs packs --json` |
 | write my own technique rules | [rule-writing how-to](docs/how-to-write-rules.md) |
 | teach augure a technique (packs) | [the pack format](docs/pack-format.md) |
+| read the published lineage and where this project stands on it | [build-format](docs/build-format.md) |
 | plug a real SMT solver | [solver how-to](docs/how-to-swap-solver.md) |
 | look up the fact format or API | [the reference](docs/reference.md) |
 | understand auditability (red/blue/purple) | [auditability](docs/auditability.md) |

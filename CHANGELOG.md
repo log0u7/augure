@@ -111,6 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   absolute values break RubyGems `full_require_paths` (the require path gets joined against the gem
   dir), so the gems were unrequirable in CI and in the `augure-profile` subprocess. The `files`
   globs stay anchored to `__dir__` so a gem builds identically from any working directory.
+
 ## [0.1.0] - 2026-10-02
 
 ### Added

@@ -146,6 +146,7 @@ stderr names the line). `coverage` always exits 0 (an analysis, not a gate).
 ## Ruby API
 
 ### `Augure::Facts`
+
 - `.parse(text) -> Facts` - strict parse, raises `MalformedFact` /
   `UnknownPredicate` with line numbers.
 - `.from_file(path) -> Facts`
@@ -157,6 +158,7 @@ stderr names the line). `coverage` always exits 0 (an analysis, not a gate).
 - `#to_s -> String` - deterministic emission; round-trips.
 
 ### `Augure::Engine`
+
 - `.new(facts, rules: Rules.all)`
 - `#run -> Result`
 - `Result#applicable -> [String]` - rule-table order.
@@ -164,6 +166,7 @@ stderr names the line). `coverage` always exits 0 (an analysis, not a gate).
 - `Result#provenance(technique) -> [{rule:, origin:, evidence:}]` - every sibling firing, each attributed
 
 ### `Augure::Bandit`
+
 - `.new(priors: {"tech" => [alpha, beta]}, rng: Random.new)`
 - `#arm(tech) -> Arm` (auto-arms unknown with (1, 1))
 - `#select(verified) -> String | nil` - Thompson sample argmax.
@@ -177,6 +180,7 @@ stderr names the line). `coverage` always exits 0 (an analysis, not a gate).
 - `#select(verified)` - the Thompson sampler (the draw).
 
 ### `Augure::Mcts`
+
 - `.plan(allowed, iterations: 2000, seed:) -> [first_move, path]`
   (`model:` overrides the transition graph; technique packs merge into
   it via `merged_model(packs)`)
@@ -188,6 +192,7 @@ stderr names the line). `coverage` always exits 0 (an analysis, not a gate).
 - `STAGE_MODEL` - the technique transition graph.
 
 ### `Augure::Pack` / `PackLoader`
+
 - `Pack.load_file(path)` - validates a technique pack (YAML) through
   the **10 armor checks** (see [pack-format.md](pack-format.md)): shape,
   stratification, new heads, provenance, kb/mcts/priors shapes, match
@@ -203,15 +208,18 @@ stderr names the line). `coverage` always exits 0 (an analysis, not a gate).
   is the canonical authoring example.
 
 ### `Augure::Verifier`
+
 - `.payload_fits(buffer_size:, payload_min:) -> :sat | :unsat`
 - `.bad_bytes?(payload:, bad_bytes:) -> bool`
 - `.rop_chain_feasible?(...) -> bool`
 - `.payload_fits_smtlib(buffer_size, payload_min) -> String`
 
 ### `Augure::SmtProcess`
+
 - `.solve(smt_text, solver:, timeout: 10) -> :sat | :unsat | :unknown`
 
 ### `Augure::Pipeline`
+
 - `.analyze(facts:, seed: nil, priors: nil, buffer_size: 256,
   packs: nil, plan: true) -> {applicable:, verified:, ranking:, selected:,
   plan:, explain:}` - `packs:` merges technique packs (rules, priors,
@@ -249,6 +257,7 @@ Pack priors fill the gaps of the prior table; a consumer-provided or
 outcome-adapted entry always wins.
 
 ### `Augure::KnowledgeBase`
+
 - `.corpus -> [entry]` (22 documented patterns)
 - `.corpus_with(extra) -> [entry]` (seed corpus + technique-pack knowledge)
 - `.priors -> {"tech" => [alpha, beta]}` (N=10 pseudo-counts)

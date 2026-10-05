@@ -29,6 +29,7 @@ the point: auditable systems are systems a reviewer can finish.
 
 Negation is stratified by convention (only on input facts) and enforced by
 the corpus spec. Defaults are closed-world (`nx` absent means `nx("true")`)
+
 - documented, tested, and the single most surprising line in the engine.
 
 ## Uncertainty, in three layers

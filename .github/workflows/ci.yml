@@ -6,7 +6,52 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+      docs: ${{ steps.diff.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - id: diff
+        run: |
+          CHANGED=$(git diff --name-only HEAD^ HEAD 2>/dev/null || git ls-files)
+          if echo "$CHANGED" | grep -qE '^(lib/|spec/|exe/|profiler/|mcp_server/|packs/|tools/|Gemfile|[^/]*\.gemspec|\.github/workflows/)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$CHANGED" | grep -qE '\.md$'; then
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  docs:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Markdown lint (the doc-only CI)
+        run: npx --yes markdownlint-cli2 "**/*.md" "#node_modules"
+
   test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || needs.changes.outputs.docs == 'true' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ["3.4", "4.0"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - name: Lint
+        run: bundle exec standardrb
+      - name: Tests
+        run: bundle exec rspec
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -24,6 +69,8 @@ jobs:
         run: bundle exec rspec
 
   parity:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -35,6 +82,8 @@ jobs:
         run: bundle exec ruby tools/parity_check.rb
 
   gems:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -49,6 +98,8 @@ jobs:
           (cd mcp_server && gem build augure-mcp.gemspec)
 
   concordance:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -60,6 +111,8 @@ jobs:
         run: bundle exec exe/augure-benchmark lib/augure/ctf_corpus.json
 
   audit:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
