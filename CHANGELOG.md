@@ -80,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2026-10-02
 
-### Added
+- The ret2csu_v2 pack carries its `build:` section: the canonical csu chain (popper setup, csu_mov call, the fall-through junk, the re-entry ref) resolved by lictor's builder from the facts - the pack teaches not only the DECISION but the ASSEMBLY order.
 
 - Project scaffold: gemspec, RSpec, Standard linting, CI skeleton.
 - Core decision layer: Facts (strict parser), Rules-as-data + Engine with

