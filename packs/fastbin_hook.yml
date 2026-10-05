@@ -28,3 +28,14 @@ mcts:
   success: 0.40
 
 priors: [8, 12]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: syslog
+    signature: "double free on same size class then rapid controlled-size allocations"
+    note: "the fastbin poisoning sequence"
+  - channel: crash
+    signature: "execution redirected into the heap or a fake fd target"
+    note: "the hook firing into attacker memory"

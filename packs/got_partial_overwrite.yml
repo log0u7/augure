@@ -28,3 +28,14 @@ mcts:
   success: 0.50
 
 priors: [8, 12]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: syscall
+    signature: "partial write to a GOT page after a stack overflow"
+    note: "the GOT edit itself (write to a mapping that should be read-only under full RELRO)"
+  - channel: crash
+    signature: "unexpected control transfer through a PLT stub"
+    note: "the hijacked call"

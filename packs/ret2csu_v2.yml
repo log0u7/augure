@@ -45,3 +45,11 @@ build:
     - [chain, "gadget:csu_popper", "const:0", "const:1", "got_addr:puts",
        "const:8", "got_addr:puts", "const:1", "gadget:csu_mov",
        "const:0", "const:0", "const:0", "const:0", "const:0", "const:0", "const:0"]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: crash
+    signature: "call through __libc_csu_init gadget territory on a gadget-poor binary"
+    note: "the csu chain issuing calls"

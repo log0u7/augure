@@ -27,3 +27,11 @@ mcts:
   success: 0.35
 
 priors: [8, 12]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: syscall
+    signature: "a huge malloc size passed to a fixed buffer-controlled value"
+    note: "the topchunk extension"

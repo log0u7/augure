@@ -69,6 +69,25 @@ RSpec.describe Augure::Pack do
         .to raise_error(Augure::PackError, /build.*slot/)
     end
 
+    it "exposes an optional detection: section (the defender side)" do
+      watched = pack_yaml("detection" => [
+        {"channel" => "wire", "signature" => "cyclic pattern of >= 40 bytes", "note" => "the padding phase"},
+        {"channel" => "crash", "signature" => "SIGSEGV with a ret to an unmapped page", "note" => "the strike"}
+      ])
+      pack = described_class.load_hash(watched)
+      expect(pack.detection.size).to eq(2)
+      expect(pack.detection.first["channel"]).to eq("wire")
+    end
+
+    it "rejects a detection: entry outside the channel vocabulary (check 9)" do
+      bad = pack_yaml("detection" => [{"channel" => "psychic", "signature" => "s", "note" => "n"}])
+      expect { described_class.load_hash(bad) }
+        .to raise_error(Augure::PackError, /detection.*channel/)
+      bad["detection"][0] = {"channel" => "wire"} # signature + note mandatory
+      expect { described_class.load_hash(bad) }
+        .to raise_error(Augure::PackError, /detection.*(signature|note)/)
+    end
+
     it "rejects a match pattern that is not a valid regex (check 7: fail at load)" do
       bad = pack_yaml
       bad["rules"][0]["conditions"][1] = ["match", "gadget", 0, "("]

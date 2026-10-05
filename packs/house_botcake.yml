@@ -28,3 +28,11 @@ mcts:
   success: 0.45
 
 priors: [8, 12]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: syscall
+    signature: "7 tcache fills then a double free across unsorted/tcache boundary"
+    note: "the consolidation window the technique requires"

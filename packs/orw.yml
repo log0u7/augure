@@ -37,3 +37,14 @@ mcts:
   success: 0.45
 
 priors: [6, 14]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: syscall
+    signature: "open+read+write syscall sequence without execve, on a filtered process"
+    note: "THE orw chain: execve blocked, orw the only path"
+  - channel: crash
+    signature: "SIGSYS (bad system call) following an execve attempt"
+    note: "the filter doing its job - the operator probed execve"

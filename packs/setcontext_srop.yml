@@ -29,3 +29,14 @@ mcts:
   success: 0.45
 
 priors: [7, 13]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: syscall
+    signature: "rt_sigreturn issued far from a real signal (the frame pivot)"
+    note: "the SROP frame being restored"
+  - channel: crash
+    signature: "register sets that never came from a signal delivery"
+    note: "the forged context"

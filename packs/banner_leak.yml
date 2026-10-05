@@ -28,3 +28,14 @@ mcts:
   success: 0.60
 
 priors: [7, 13]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: wire
+    signature: "the service's banner carries raw hex addresses (%p prints)"
+    note: "the leak itself: addresses handed over before the first input"
+  - channel: syslog
+    signature: "short-lived connections that read only the greeting"
+    note: "a leak pass: connect-read-close, no input sent"

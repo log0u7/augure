@@ -29,3 +29,11 @@ mcts:
   success: 0.45
 
 priors: [6, 14]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: syscall
+    signature: "the same partial GOT write plus gadget-sourced register setup"
+    note: "the deref variant's chain"

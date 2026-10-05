@@ -28,3 +28,14 @@ mcts:
   success: 0.30
 
 priors: [5, 15]
+
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: syscall
+    signature: "FILE structure writes into _IO_list_all territory (heap chunks at unusual sizes)"
+    note: "the fake FILE being groomed"
+  - channel: crash
+    signature: "abort inside _IO_flush_all_lockp with attacker-controlled pointers"
+    note: "the wide-character exit path firing"

@@ -18,7 +18,7 @@ module Augure
   class Pack
     CONDITION_VOCABULARY = %w[fact not_fact match cmp].freeze
 
-    attr_reader :technique, :author, :source, :rules, :kb, :mcts, :priors, :build
+    attr_reader :technique, :author, :source, :rules, :kb, :mcts, :priors, :build, :detection
 
     def self.load_file(path)
       data = YAML.safe_load_file(path, permitted_classes: [], aliases: false)
@@ -65,6 +65,7 @@ module Augure
       validate_mcts(@data["mcts"])
       validate_priors(@data["priors"])
       validate_build(@data["build"])
+      validate_detection(@data["detection"])
       build_rules
     end
 
@@ -165,6 +166,31 @@ module Augure
     # the slot vocabulary only. The consumer (lictor's PayloadBuilder)
     # interprets the slots; here we gate the vocabulary.
     BUILD_SLOTS = %w[padding qword dword shellcode chain].freeze
+
+    # armor check 9: the optional detection: section - the DEFENDER
+    # side of the technique (the corpus read backwards). Constrained
+    # channel vocabulary; every entry carries a signature and a note -
+    # a vague hint is not detection content.
+    DETECTION_CHANNELS = %w[wire syslog syscall crash file].freeze
+
+    def validate_detection(detection)
+      return if detection.nil?
+
+      unless detection.is_a?(Array) && !detection.empty?
+        reject "detection: must be a non-empty array"
+      end
+      detection.each_with_index do |e, i|
+        unless e.is_a?(Hash) && DETECTION_CHANNELS.include?(e["channel"])
+          reject "detection #{i}: channel must be from #{DETECTION_CHANNELS.inspect}"
+        end
+        %w[signature note].each do |field|
+          unless e[field].is_a?(String) && !e[field].empty?
+            reject "detection #{i}: #{field} is mandatory (a vague hint is not detection content)"
+          end
+        end
+      end
+      @detection = detection
+    end
 
     def validate_build(build)
       return if build.nil?

@@ -41,7 +41,7 @@ mcts:
 priors: [14, 6]                  # Beta(alpha, beta): mean 0.7 here
 ```
 
-## The 6 checks (in the order the loader runs them)
+## The checks (in the order the loader runs them)
 
 1. **Condition vocabulary**: only `fact`, `not_fact`, `match`, `cmp`.
    Anything else - including "clever" ones - is refused.
@@ -63,6 +63,22 @@ priors: [14, 6]                  # Beta(alpha, beta): mean 0.7 here
    BELOW the documented top). A pack that takes the top-1 of a
    documented target is refused - claiming better on frozen truth is a
    dev-time corpus update, not a runtime pack.
+
+## The optional `build:` and `detection:` sections
+
+`build:` teaches the BUILDER the technique's assembly order (packs
+teach, lictor's builder follows): the layout must be a slot list from
+the vocabulary (padding/qword/dword/shellcode/chain - see
+build-format.md), the technique must be the pack's own. Armor check 8.
+
+`detection:` is the DEFENDER side of the technique - the corpus read
+backwards. One entry per observable: `channel` from the constrained
+vocabulary (wire/syslog/syscall/crash/file), a concrete `signature`,
+and a `note` saying what the observable means. A vague hint is not
+detection content - the armor rejects it (check 9). The blue team
+consumes these with `augure rules --mitre` and the hardened-coverage
+flow; a pack without `detection:` teaches the offense but leaves the
+defense blind.
 
 ## The cycle
 
