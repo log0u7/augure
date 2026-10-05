@@ -28,11 +28,15 @@ lictor scan <host>                           # nmap; the scan is trailed
 lictor acquire <target> --from <url>        # the nmap->binary bridge (or --bin <path>)
 lictor fuzz <binary>                        # discovery: sweep + triage -> facts
 lictor verify <target> --input crash-input.bin  # the differential: remote-verified
-lictor suggest <facts> "plt(\"system\")."    # propose observations, augure re-decides (delta back)
+lictor suggest <facts> "plt(\"system\")." -o <facts>   # propose observations, augure re-decides; -o writes the merged base
+lictor harvest <target> --facts <facts>      # the banner's hex leaks -> leaked_address facts
 lictor plan <binary-or-facts> [--json]   # decide (schema: augure/decision@1)
-lictor build <binary> --facts <facts>       # MEASURED offset + fact-sourced return -> payload file
-lictor run <target> --facts <f> --executor ronin
-                                            # decide -> execute -> outcome -> re-decide
+lictor build <binary> --facts <facts>       # MEASURED offset + fact-sourced return -> payload
+                                            # ROP chains: chain slots resolve gadget:/plt_addr:/got_addr:/leak:/const: from the facts
+                                            # seccomp("true") in the facts: the sh stub switches to the orw chain
+lictor run <target> --facts <f> --executor ronin --flag-regex "FLAG\\{[^}]+\\}"
+                                            # decide -> execute -> outcome -> re-decide; the flag in the output is the oracle,
+                                            # and the output's hex leaks become facts for the next attempt
 lictor exploit scaffold <technique> <binary> --facts <facts> --repo-dir DIR   # draft the ronin exploit (review before commit)
 lictor draft <facts> [binary]   # nothing applies? the observations become a staged pack
 lictor outcome <run-id> --success --technique <t>   # feed the closed loop
