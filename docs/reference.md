@@ -7,7 +7,18 @@ Version: augure 0.1.x.
 One fact per line: `predicate("string-atom").` or `predicate("atom", 42).`
 Blank lines and `// comments` ignored. Rules (`:-`) rejected. Unknown
 predicate, wrong arity or wrong argument type raises an explicit error with
-the line number.
+the line number. So does:
+
+- a **value outside a closed domain** (18 predicates are validated: the
+  booleans take `"true"`/`"false"` only, `relro` takes `none`/`partial`/`full`,
+  `verified` takes `"remote"` - a typo'd atom parses under a string-only
+  schema, disables the closed-world default and silently kills every rule
+  of the predicate; the validation makes it loud instead);
+- an **atom carrying quotes, backslashes, parens or newlines** (the
+  grammar keeps the fact stream a stream).
+
+Free-form predicates (`vuln`, `vuln_hint`, `allocator`, `gadget`,
+`win_symbol`, `plt`...) take any atom.
 
 ### A complete example
 
@@ -78,13 +89,13 @@ absent `canary` = `"false"`.
 
 | Rule ID | Head | Fires when |
 |---|---|---|
-| `app_shellcode` | `shellcode` | sof, NX off, no canary, return not filtered |
+| `app_shellcode` | `shellcode` | sof, NX off, no canary, return not filtered, NOT seccomp |
 | `app_ret2func` | `ret2func` | sof, PIE off, target function present |
 | `app_ret2plt` | `ret2plt` | sof, NX on, PIE off, `system` imported |
-| `app_ret2libc_plt` | `ret2libc` | sof, `__libc_start_main` imported |
-| `app_ret2libc_libc` | `ret2libc` | sof, libc present |
-| `app_rop` | `rop` | sof, NX on, gadget supply (pop or mov-store) |
-| `app_srop` | `srop` | sof, sigreturn frame, syscall gadget |
+| `app_ret2libc_plt` | `ret2libc` | sof, `__libc_start_main` imported, NOT seccomp |
+| `app_ret2libc_libc` | `ret2libc` | sof, libc present, NOT seccomp |
+| `app_rop` | `rop` | sof, NX on, gadget supply (pop or mov-store), NOT seccomp |
+| `app_srop` | `srop` | sof, sigreturn frame, syscall gadget, NOT seccomp |
 | `app_ret2plt_leak` | `ret2plt_leak` | sof, NX on, PIE on, `puts`, reg control |
 | `app_fmtstr_write` | `fmtstr_write` | format-string vuln (NX-independent) |
 | `app_fmtstr_leak_read` | `fmtstr_leak` | fmtstr + read primitive |
@@ -102,6 +113,10 @@ absent `canary` = `"false"`.
 | `app_heap_overwrite_dlmalloc` | `heap_overwrite` | heap, dlmalloc |
 | `app_heap_overwrite_fp` | `heap_overwrite` | heap, function pointer on heap |
 
+("NOT seccomp" = the rule carries `[not_fact, seccomp, "true"]`: the
+technique ends in execve, dead under any filter that kills execve; the
+condition passes when the fact is absent.)
+
 Derived relations: `vuln` (from hints), `has_reg_control`,
 `has_write_primitive`, `has_syscall_gadget`, `has_csu_gadget`,
 `has_pivot_gadget`, `enough_gadgets`.
@@ -110,16 +125,23 @@ Derived relations: `vuln` (from hints), `has_reg_control`,
 
 ```
 augure analyze <facts-file | -> [--json] [--seed N] [--packs DIR]
+augure coverage [--flip NAME:VALUE ...] [--facts FILE] [--json]
+augure rules [--mitre] [--packs DIR] [--json]
+augure explain <technique>
+augure doctor
 ```
 
 | Flag | Effect |
 |---|---|
-| `--json`, `-j` | machine-readable decision |
+| `--json`, `-j` | machine-readable decision (analyze) / the coverage scorecard (coverage) / the Navigator layer (rules --mitre) |
 | `--seed N`, `-s N` | deterministic bandit/MCTS draws |
+| `--packs DIR` | merge technique packs (analyze, explain, rules --mitre's source) |
+| `--flip NAME:VALUE` | coverage: a hardening override (`nx:true`, `canary:true`, `relro:full`; `NAME:nil` removes) |
+| `--facts FILE` | coverage: one entry instead of the whole corpus |
 | (stdin) | `-` reads facts from stdin |
 
 Exit codes: `0` decision emitted, non-zero on malformed facts (message on
-stderr names the line).
+stderr names the line). `coverage` always exits 0 (an analysis, not a gate).
 
 ## Ruby API
 
@@ -127,7 +149,10 @@ stderr names the line).
 - `.parse(text) -> Facts` - strict parse, raises `MalformedFact` /
   `UnknownPredicate` with line numbers.
 - `.from_file(path) -> Facts`
+- `.new` + `#add(name, *args)` - the builder API (the profiler's
+  contract; the same domain + grammar validation as `parse`).
 - `#rel(name) -> Array<[arg, ...]> | nil` - tuples by relation.
+- `#each`, `#size`, `#[]` - iteration, count, direct lookup.
 - `#merge(other) -> Facts` - combined copy.
 - `#to_s -> String` - deterministic emission; round-trips.
 
@@ -136,31 +161,46 @@ stderr names the line).
 - `#run -> Result`
 - `Result#applicable -> [String]` - rule-table order.
 - `Result#derived(rel) -> [tuple]`
-- `Result#provenance(technique) -> [{rule:, evidence:}]`
+- `Result#provenance(technique) -> [{rule:, origin:, evidence:}]` - every sibling firing, each attributed
 
 ### `Augure::Bandit`
 - `.new(priors: {"tech" => [alpha, beta]}, rng: Random.new)`
 - `#arm(tech) -> Arm` (auto-arms unknown with (1, 1))
 - `#select(verified) -> String | nil` - Thompson sample argmax.
 - `#feedback(tech, success)` - updates posterior, logs history.
-- `#ranking_of(techniques) -> [String]` - prior-mean order, deterministic (the method the corpus freezes; `#rankings` draws Thompson samples).
+- `#ranking_of(techniques) -> [[tech, mean], ...]` - prior-mean pairs,
+  deterministic (the method the corpus freezes; the pipeline maps
+  `&:first` over it).
+- `#rankings -> [[tech, mean], ...]` - ALL arms sorted by prior mean
+  (deterministic, not a draw).
+- `#mean(tech) -> Float` - the prior mean (alpha / (alpha + beta)).
+- `#select(verified)` - the Thompson sampler (the draw).
 
 ### `Augure::Mcts`
 - `.plan(allowed, iterations: 2000, seed:) -> [first_move, path]`
   (`model:` overrides the transition graph; technique packs merge into
   it via `merged_model(packs)`)
-- `.available(caps, allowed)`, `.transition(caps, tech)`, `.terminal?(caps)`
+- `.available(caps, allowed)`, `.transition(caps, tech)`,
+  `.terminal?(caps, model:)` - terminal = any capability provided by a
+  `terminal: true` stage of the model (packs own their semantics; the
+  built-in model's terminals all provide `shell`).
+- `.stage(tech)` - one stage's `[requires, provides, terminal, success]`.
 - `STAGE_MODEL` - the technique transition graph.
 
 ### `Augure::Pack` / `PackLoader`
-- `Pack.load_file(path)` - validates a technique pack (YAML): schema,
-  existing predicates only, stratification, new heads only, mandatory
-  provenance (author + source).
-- `PackLoader.load_dir(dir) -> [Pack]`,
-  `.corpus_guard(packs)` - refuses any pack that reorders an existing
-  technique or takes a documented target's top-1.
-- Packs are data the consumer owns; the canonical example lives at
-  `packs/ret2csu_v2.yml` in the augure repo.
+- `Pack.load_file(path)` - validates a technique pack (YAML) through
+  the **10 armor checks** (see [pack-format.md](pack-format.md)): shape,
+  stratification, new heads, provenance, kb/mcts/priors shapes, match
+  regexes + cmp types (7), the optional `build:` (8), `detection:` (9),
+  `mitre:` (10).
+- `PackLoader.load_dir(dir) -> [Pack]`, `.priors_with(packs, base)`,
+  `.mcts_model(packs)`.
+- `.corpus_guard(packs)` - refuses any pack that reorders an existing
+  technique or takes a documented target's top-1; honors a documented
+  `pack_verdict` entry (the pack answer must ARRIVE) and tolerates
+  empty frozen verdicts.
+- The gem SHIPS all 20 packs (`packs/` in the gem); `packs/ret2csu_v2.yml`
+  is the canonical authoring example.
 
 ### `Augure::Verifier`
 - `.payload_fits(buffer_size:, payload_min:) -> :sat | :unsat`
@@ -198,10 +238,15 @@ The shipped packs extend the rule table as data (`packs/`, loaded with
 `unsorted_bin_attack`, `fastbin_hook`, `ret2dlresolve_x86`,
 `got_partial_overwrite`, `brop` (the first rule that consumes
 `verified("remote")` - an observation anchors it), `ret2partial_overwrite`,
-`one_gadget` - plus the canonical `ret2csu_v2` example. Each carries its
-rules, knowledge-base entries, MCTS transition and Beta priors, with the
-author and source as provenance. Pack priors fill the gaps of the prior
-table; a consumer-provided or outcome-adapted entry always wins.
+`one_gadget`, `banner_leak`, `got_partial_overwrite_deref`,
+`house_of_apple2`, `jop`, `large_bin_attack`, `orw`, `ret2vdso`,
+`setcontext_srop`, `uaf_tcache` - plus the canonical `ret2csu_v2`
+example: **20 packs** ship. Each carries its rules, knowledge-base
+entries, MCTS transition and Beta priors, the author and source as
+provenance, and (optionally) `build:` (the assembly order),
+`detection:` (the defender side) and `mitre:` (the ATT&CK mapping).
+Pack priors fill the gaps of the prior table; a consumer-provided or
+outcome-adapted entry always wins.
 
 ### `Augure::KnowledgeBase`
 - `.corpus -> [entry]` (22 documented patterns)

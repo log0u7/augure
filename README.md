@@ -26,8 +26,9 @@ because it generates text, not proofs. Augure generates proofs, not text:
   applicable technique. Decidable, terminating, readable.
 - **Verify** - arithmetic and SMT-LIB checks confirm the selected technique
   is *numerically feasible*, not merely logically applicable.
-- **Explain** - every decision ships with its provenance: which rule fired,
-  which facts justified it, which Beta prior and which seeded draw ranked it.
+- **Explain** - every decision ships with its provenance: every rule that
+  fired (siblings included, each attributed), the facts that justified it,
+  the Beta prior and the seeded draw that ranked it.
   Same input + same seed = same decision. Always.
 
 
@@ -59,6 +60,10 @@ augure doctor                              # verify the environment
 augure analyze examples/ret2win.facts      # your first decision
 ```
 
+(The `examples/` ship in the gem; in a repo checkout the same paths work
+from the repo root. Not published yet? The sibling lictor checkout
+resolves augure by path - its Gemfile says so.)
+
 Profile a real binary into facts, then decide on them:
 
 ```sh
@@ -72,7 +77,7 @@ applicable: ret2plt, rop
 selected:   ret2plt
 plan:       ret2plt
   ret2plt <- app_ret2plt (vuln=sof, nx=true, pie=false, plt=system)
-  rop     <- app_rop      (vuln=sof, nx=true, enough_gadgets=true)
+  rop <- app_rop (vuln=sof, nx=true, enough_gadgets=true)
 ```
 
 Or the machine-readable form:
@@ -80,13 +85,17 @@ Or the machine-readable form:
 ```console
 $ augure analyze target.facts --json
 {
+  "schema":     "augure/decision@1",
   "applicable": ["ret2plt", "rop"],
-  "verified":   { "ret2plt": { "status": "sat" }, "rop": { "status": "sat" } },
+  "ranking":    ["ret2plt", "rop"],
+  "verified":   { "ret2plt": { "status": "sat", "checks": { "payload_fits": "sat" } },
+                  "rop":     { "status": "sat", "checks": { "payload_fits": "sat" } } },
   "selected":   "ret2plt",
   "plan":       ["ret2plt"],
   "explain": {
     "provenance": {
-      "ret2plt": [{ "rule": "app_ret2plt", "evidence": ["vuln=sof", "nx=true", ...] }]
+      "ret2plt": [{ "rule": "app_ret2plt", "origin": null,
+                    "evidence": [["vuln", "sof"], ["nx", "true"], ["pie", "false"], ["plt", "system"]] }]
     }
   }
 }
@@ -100,7 +109,7 @@ require "augure"
 result = Augure::Pipeline.analyze(facts: File.read("target.facts"), seed: 42)
 
 result[:selected]          # => "ret2plt"
-result[:explain]           # => { provenance: { "ret2plt" => [{ rule:, evidence: [...] }] } }
+result[:explain]           # => { provenance: { "ret2plt" => [{ rule:, origin:, evidence: [...] }] } }
 ```
 
 ## What is in the box
@@ -117,30 +126,32 @@ result[:explain]           # => { provenance: { "ret2plt" => [{ rule:, evidence:
 | Planner | [`Augure::Mcts`](docs/reference.md#auguremcts) | Multi-step planning: a leak is worth what it unlocks. |
 | CLI | [`exe/augure`](docs/tutorial.md) | Facts in, decision out, JSON if you want it. |
 
-**Zero runtime dependencies.** Every external capability (Soufflé, SMT
+**Zero runtime dependencies.** Every external capability (SMT
 solvers, LLM providers) enters through a subprocess or HTTP boundary.
 
 ## How the decision flows
 
 ```mermaid
 graph LR
-    B["binary<br/>(augure-profiler)"] --> F["Augure::Facts<br/>strict schema"]
+    B["binary<br/>(augure-profiler)"] --> F["Augure::Facts<br/>strict schema<br/>+ value domains"]
     F --> E["Augure::Engine<br/>Datalog rules-as-data"]
+    P["technique packs<br/>(build: / detection: / mitre:)"] -- "armored + corpus-guarded" --> E
+    E -- provenance --> D
     E --> V["Augure::Verifier<br/>arithmetic / SMT-LIB"]
     V --> B1["Augure::Bandit<br/>Beta posteriors"]
-    B1 --> M["Augure::Mcts<br/>multi-step plan"]
-    M --> D["decision + explain<br/>rule ID + evidence + seed"]
-    E -- provenance --> D
+    B1 --> M["Augure::Mcts<br/>multi-step plan (model-owned terminals)"]
+    M --> D["decision + explain<br/>augure/decision@1"]
     KB["KnowledgeBase<br/>22 documented patterns"] -. priors .-> B1
     SOLV["z3 / bitwuzla / cvc5<br/>(subprocess)"] -. SMT-LIB text .-> V
+    D --> COV["augure coverage<br/>the corpus read backwards"]
 ```
 
 ## Honest numbers
 
 Augure's decision engine reproduces the frozen CTF benchmark corpus
 byte-for-byte - **33/33** technique classifications across ROP Emporium,
-Protostar, Phoenix and pwnable-style targets (14 built-in techniques plus
-the taught technique packs),
+Protostar, Phoenix and pwnable-style targets (16 built-in technique
+heads plus the 20 taught technique packs),
 and 5/5 multi-step plans including an externally documented kernel chain.
 CI runs [`augure-benchmark`](docs/reference.md#cli) and fails the build below 100%.
 
@@ -166,8 +177,9 @@ audit begins with this sentence.
 | audit trail | chat log | machine-checkable provenance |
 
 They compose: an LLM proposes hypotheses, Augure disposes. That is the
-generate-then-verify pattern - and `augure-mcp` (shipped, see below)
-exposes exactly that read-only surface to agents.
+generate-then-verify pattern - and the shipped **augure-mcp** gem
+exposes exactly that read-only surface (analyze_target, list_rules,
+explain_technique) to agents.
 
 ## Acceptable use
 
@@ -199,7 +211,7 @@ deferred behind it (0002), PE/Windows out of scope for v0.x (0003).
 |---|---|
 | get my first decision in 10 minutes | [the tutorial](docs/tutorial.md) |
 | see what hardening kills (the blue scorecard) | `augure coverage --flip canary:true` |
-| align with ATT&CK (purple) | `augure rules --mitre --json` |
+| align with ATT&CK (purple) | `augure rules --mitre --packs packs --json` |
 | write my own technique rules | [rule-writing how-to](docs/how-to-write-rules.md) |
 | teach augure a technique (packs) | [the pack format](docs/pack-format.md) |
 | plug a real SMT solver | [solver how-to](docs/how-to-swap-solver.md) |
