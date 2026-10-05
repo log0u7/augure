@@ -52,21 +52,6 @@ jobs:
         run: bundle exec standardrb
       - name: Tests
         run: bundle exec rspec
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        ruby: ["3.4", "4.0"]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby }}
-          bundler-cache: true
-      - name: Lint
-        run: bundle exec standardrb
-      - name: Tests
-        run: bundle exec rspec
 
   parity:
     needs: changes
