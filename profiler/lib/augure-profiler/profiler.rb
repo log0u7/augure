@@ -29,7 +29,10 @@ module AugureProfiler
       ["ret_align", "c3"]                   # ret
     ].freeze
 
-    UNSAFE_SYMBOLS = %w[gets strcpy strcat sprintf scanf printf].freeze
+    # printf is NOT on the list: a constant format is not a vuln, and
+    # the hint would derive vuln(fmtstr) for every binary that prints -
+    # sprintf stays (unbounded by design).
+    UNSAFE_SYMBOLS = %w[gets strcpy strcat sprintf scanf].freeze
 
     ET_DYN = "DYN"
 

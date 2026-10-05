@@ -45,6 +45,19 @@ RSpec.describe AugureProfiler::Profiler do
       gots.each { |(_, addr)| expect(addr).to be > 0 }
     end
 
+    it "does NOT flag printf as a vuln hint (a constant format is not a vuln)" do
+      # every binary imports printf; the hint would derive vuln(fmtstr)
+      # everywhere - sprintf stays flagged (unbounded by design), the
+      # controlled-format knowledge is the operator's suggest flow
+      dir = Dir.mktmpdir
+      src = File.join(dir, "printf_user.c")
+      File.write(src, "int main(void) { printf(\"constant\\n\"); return 0; }")
+      bin = BinaryBuilder.gcc(dir, src, "printf_user")
+      facts = described_class.new(bin).facts
+      hints = facts.rel("vuln_hint") || []
+      expect(hints).not_to include(["unsafe_func:printf"])
+    end
+
     it "does NOT emit plt for a local function named like an import" do
       # the ret2plt trap: plt("system") on a local function makes the
       # decision layer believe a PLT stub exists that does not
