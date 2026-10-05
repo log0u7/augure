@@ -164,7 +164,7 @@ module Augure
     # BUILDER its assembly order) must name its own technique and use
     # the slot vocabulary only. The consumer (lictor's PayloadBuilder)
     # interprets the slots; here we gate the vocabulary.
-    BUILD_SLOTS = %w[padding qword dword shellcode].freeze
+    BUILD_SLOTS = %w[padding qword dword shellcode chain].freeze
 
     def validate_build(build)
       return if build.nil?
