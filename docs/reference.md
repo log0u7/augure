@@ -41,6 +41,8 @@ vuln_hint("unsafe_func:gets").
 | `win_symbol` | 2 | string, integer | the winning function's name and address (emitted by the profiler) |
 | `crash_site` | 1 | string | the crash's identification: `ret` when the control is confirmed by the planted pattern |
 | `leaked_address` | 2 | string, integer | an address the service's own banner leaked (name + value, emitted by lictor's harvest) |
+| `plt_addr` | 2 | string, integer | a JMP_SLOT import's PLT stub address (name + value, emitted by the profiler from the section layout) |
+| `got_addr` | 2 | string, integer | a JMP_SLOT import's GOT entry address (the relocation offset) |
 | `vuln_function` | 1 | string | the vulnerable function the static frame read named |
 | `sink` | 1 | string | the unsafe sink (strcpy, gets, ...) the static read identified |
 | `pie` | 1 | string | position-independent executable |
