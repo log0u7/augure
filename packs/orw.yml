@@ -7,7 +7,9 @@ rules:
     head: [applicable, orw]
     conditions:
       - [fact, seccomp, true]
-      - [fact, nx, true]
+    # nx is deliberately ABSENT: the stub placement adapts - nx false
+    # (execstack) rides the stack, nx true needs the operator's R-X
+    # page craft. The filter is the technique's reason to exist.
       - [fact, has_syscall_gadget, true]
 
 kb:
