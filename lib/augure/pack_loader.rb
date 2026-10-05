@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'json'
+require "json"
 
 module Augure
   # Loads and screens technique packs. The corpus guard is the armor's
@@ -15,30 +15,30 @@ module Augure
     end
 
     def load_dir(dir)
-      Dir.glob(File.join(dir, '*.{yml,yaml}')).sort.map { |p| Pack.load_file(p) }
+      Dir.glob(File.join(dir, "*.{yml,yaml}")).sort.map { |p| Pack.load_file(p) }
     end
 
     # Belt and braces: new-heads-only already makes flips structurally
     # impossible; this proves it on every load.
     def corpus_guard(packs, corpus_path: nil)
-      corpus_path ||= File.join(__dir__, 'ctf_corpus.json')
+      corpus_path ||= File.join(__dir__, "ctf_corpus.json")
       corpus = JSON.parse(File.read(corpus_path))
       base_priors = Pipeline.default_priors
-      corpus['suites'].values.flatten.each do |entry|
-        before = Pipeline.analyze(facts: entry['facts'], priors: base_priors, plan: false)
-        after = Pipeline.analyze(facts: entry['facts'], priors: priors_with(packs, base_priors),
-                                 packs: packs, plan: false)
+      corpus["suites"].values.flatten.each do |entry|
+        before = Pipeline.analyze(facts: entry["facts"], priors: base_priors, plan: false)
+        after = Pipeline.analyze(facts: entry["facts"], priors: priors_with(packs, base_priors),
+          packs: packs, plan: false)
         # A documented pack verdict is not a mover: the frozen entry may
         # say the built-in table has no answer for this target AND the
         # pack layer does (entry["pack_verdict"]) - the guard then
         # checks the pack answer ARRIVES, not that nothing changed. The
         # check holds only when that pack is among the loaded ones.
-        if entry['pack_verdict'] && packs.any? { |p| p.technique == entry['pack_verdict'] }
-          unless after[:ranking].first == entry['pack_verdict']
+        if entry["pack_verdict"] && packs.any? { |p| p.technique == entry["pack_verdict"] }
+          unless after[:ranking].first == entry["pack_verdict"]
             raise PackError,
-                  "corpus guard: pack(s) #{packs.map(&:technique).join(', ')} fail the documented " \
-                  "pack verdict on #{entry['suite']}/#{entry['name']} " \
-                  "(expected #{entry['pack_verdict']}, got #{after[:ranking].first}) - refused"
+              "corpus guard: pack(s) #{packs.map(&:technique).join(", ")} fail the documented " \
+              "pack verdict on #{entry["suite"]}/#{entry["name"]} " \
+              "(expected #{entry["pack_verdict"]}, got #{after[:ranking].first}) - refused"
           end
           next
         end
@@ -58,9 +58,9 @@ module Augure
         next if existing_order == before[:ranking] && after[:ranking].first == before[:ranking].first
 
         raise PackError,
-              "corpus guard: pack(s) #{packs.map(&:technique).join(', ')} move the verdict " \
-              "on #{entry['suite']}/#{entry['name']} " \
-              "(#{before[:ranking].first} -> #{after[:ranking].first}) - refused"
+          "corpus guard: pack(s) #{packs.map(&:technique).join(", ")} move the verdict " \
+          "on #{entry["suite"]}/#{entry["name"]} " \
+          "(#{before[:ranking].first} -> #{after[:ranking].first}) - refused"
       end
       packs
     end
