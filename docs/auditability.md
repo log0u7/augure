@@ -4,6 +4,15 @@
 
 ## What auditability means here
 
+> The narrative below is now a TOOL: `augure coverage --flip
+> canary:true` replays the corpus under a hardening override and
+> prints what died (the blue scorecard); `augure rules --mitre
+> --json` exports the ATT&CK Navigator layer; the packs' `detection:`
+> sections give lictor's `report --defender` its per-technique
+> observables. The prose describes the design; the commands run it.
+
+## What auditability means here
+
 Every decision Augure produces is a set of readable proofs, not a score:
 
 ```json

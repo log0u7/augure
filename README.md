@@ -198,6 +198,8 @@ deferred behind it (0002), PE/Windows out of scope for v0.x (0003).
 | I want to... | Read |
 |---|---|
 | get my first decision in 10 minutes | [the tutorial](docs/tutorial.md) |
+| see what hardening kills (the blue scorecard) | `augure coverage --flip canary:true` |
+| align with ATT&CK (purple) | `augure rules --mitre --json` |
 | write my own technique rules | [rule-writing how-to](docs/how-to-write-rules.md) |
 | teach augure a technique (packs) | [the pack format](docs/pack-format.md) |
 | plug a real SMT solver | [solver how-to](docs/how-to-swap-solver.md) |
