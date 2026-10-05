@@ -4,6 +4,14 @@
 
 ## The tools (the narrative runs)
 
+The pattern has a name now. Kambhampati et al. call it the
+LLM-Modulo framework ("LLMs Can't Plan, But Can Help Planning", ICML
+2024): the LLM proposes, external model-based verifiers dispose.
+Wang et al.'s CHECKMATE (arXiv 2512.11143, 2025) measured it: Claude
+Code + an external classical planner improves penetration success by
+over 20%. augure-lictor IS that shape, with the receipts: the
+verifier is Datalog + a frozen corpus, not prose.
+
 > The narrative below is now a TOOL: `augure coverage --flip
 > canary:true` replays the corpus under a hardening override and
 > prints what died (the blue scorecard); `augure rules --mitre

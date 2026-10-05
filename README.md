@@ -168,7 +168,9 @@ audit begins with this sentence.
 | audit trail | chat log | machine-checkable provenance |
 
 They compose: an LLM proposes hypotheses, Augure disposes. That is the
-generate-then-verify pattern - and the shipped **augure-mcp** gem
+generate-then-verify pattern the planning literature names LLM-Modulo
+(Kambhampati et al., ICML 2024) and that CHECKMATE (Wang et al., 2025)
+measured at +20% penetration success. The shipped **augure-mcp** gem
 exposes exactly that read-only surface (analyze_target, list_rules,
 explain_technique) to agents.
 
