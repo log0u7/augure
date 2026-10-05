@@ -34,11 +34,13 @@ module Augure
         # checks the pack answer ARRIVES, not that nothing changed. The
         # check holds only when that pack is among the loaded ones.
         if entry["pack_verdict"] && packs.any? { |p| p.technique == entry["pack_verdict"] }
-          after[:ranking].first == entry["pack_verdict"] ? next :
-            (raise PackError,
+          unless after[:ranking].first == entry["pack_verdict"]
+            raise PackError,
               "corpus guard: pack(s) #{packs.map(&:technique).join(", ")} fail the documented " \
               "pack verdict on #{entry["suite"]}/#{entry["name"]} " \
-              "(expected #{entry["pack_verdict"]}, got #{after[:ranking].first}) - refused")
+              "(expected #{entry["pack_verdict"]}, got #{after[:ranking].first}) - refused"
+          end
+          next
         end
         # Additive packs may extend applicable/ranking with NEW techniques
         # below the documented top - what they must never do: (1) move an

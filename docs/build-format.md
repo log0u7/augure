@@ -43,11 +43,28 @@ A build layout is an ordered list of slots (data, in
 |---|---|---|
 | `padding` | `measured_offset`, optional `sled` | the measured offset of `A` (or `\x90`) |
 | `qword` | `win` or `gadget:TYPE` | the fact's address, 8 bytes |
-| `dword` | same | 4 bytes (x86) |
-| `shellcode` | `sh` or `bash` (or `file` with `--payload-file`) | the assembled stub |
+| `dword` | same | 4 bytes (x86), whatever the arch |
+| `shellcode` | `sh`, `bash`, `orw` (+ the flag path as the third element), or `file` with `--payload-file` | the assembled stub |
+| `chain` | one or more refs | one arch-width word per ref, in order |
+
+The `chain` refs resolve against the facts, loud `BuildError` on any
+missing piece: `gadget:TYPE`, `plt_addr:NAME`, `got_addr:NAME` (the
+profiler's address facts), `win`, `leak:NAME` (a
+`leaked_address(name)` fact - the harvest, the run's leak capture),
+`const:N` (a literal - a syscall number, an offset). The built-in
+layouts cover `ret2plt` (the puts@got leak chain) and `ret2libc`
+(post-leak: ret-align + pop_rdi + binsh + system); the `orw` layout
+strikes through the leaked buffer address. The `ret2csu_v2` pack
+teaches its own chain (the canonical csu leak) in `build:` - packs
+teach, the builder follows.
+
+Under `seccomp("true")` the `sh` stub is a booby trap (execve dies):
+the builder switches the stub to the orw chain (open/read/write,
+clean exit) with the flag path embedded.
 
 The armor validates a pack's `build:` section: the technique must be
-the pack's own, the layout must be a slot list, the refs must name
+the pack's own, the layout must be a slot list from the vocabulary
+(padding, qword, dword, shellcode, chain), the refs must name
 existing predicates. A refused layout never reaches the builder.
 
 ## What metasm does here
