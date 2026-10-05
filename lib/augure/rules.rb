@@ -96,6 +96,9 @@ module Augure
           c.fact "nx", "false"
           c.fact "canary", "false"
           c.not_fact "return_addr_filtered", "true"
+          # the technique as-modeled ends in execve: dead under a
+          # filter - the orw pack owns the seccomp case
+          c.not_fact "seccomp", "true"
         end
         b.rule :app_ret2func, ["applicable", "ret2func"],
           source: "win function present at fixed address, no PIE" do |c|

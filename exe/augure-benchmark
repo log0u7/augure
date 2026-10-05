@@ -36,6 +36,15 @@ corpus["suites"].each do |suite, entries|
   entries.each do |entry|
     result = Augure::Pipeline.analyze(facts: entry["facts"], priors: meta_priors)
     top3 = result[:ranking].first(3)
+    # An empty frozen verdict is a verdict: concordance = the engine
+    # reproduces it exactly (the pack layer owns the technique; the
+    # built-in table intentionally says nothing).
+    if entry["applicable"].empty?
+      ok = result[:applicable].empty?
+      suite_ok1 += 1 if ok
+      suite_ok3 += 1 if ok
+      next
+    end
     suite_ok1 += 1 if result[:ranking].first == entry["truth"]
     suite_ok3 += 1 if top3.include?(entry["truth"])
   end

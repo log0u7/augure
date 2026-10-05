@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Changed
+- `shellcode` carries the seccomp guard too: the technique as-modeled ends in execve - dead under a filter, the orw pack owns the seccomp case. The frozen `pwnable/orw` entry moves to an EMPTY built-in verdict (the pack layer's technique, deliberately not in the built-in table) with the justification in the corpus; the benchmark counts a reproduced empty verdict as concordance (33/33 holds).
 - `printf` leaves UNSAFE_SYMBOLS: a constant format is not a vuln, and the hint derived `vuln(fmtstr)` for every binary that prints - the lab's menu binaries all became "format string bugs". `sprintf` stays flagged (unbounded by design); the controlled-format knowledge belongs to the operator's suggest flow.
 - seccomp demotes the shell techniques: `ret2libc`, `rop` and `srop` rules carry `[not_fact, seccomp, "true"]` - a filter that kills execve kills system/execve chains, and the decision layer now says so. The not_fact passes when the fact is absent, so the frozen corpus is untouched (33/33); the lab's orw target demonstrated the gap (the demo picked ret2libc on a seccomp'd binary).
 - The shipped `augure` gem now carries the packs, the example fact bases, the docs and the `augure-benchmark` executable (previously checkout-only: consumers could not reproduce the headline concordance claim from an installed gem). `augure-profiler` gets its first real version (0.0.1), a bounded `augure ~> 0.1` dependency and a changelog_uri. Doc drift fixed: 31 input facts, 33 corpus targets, `leaked_address` in the schema table, `#ranking_of` documented.
