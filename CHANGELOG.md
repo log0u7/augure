@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subprocess. The `files` globs stay anchored to `__dir__` so a gem
   builds identically from any working directory.
 
-### Added
+- The profiler emits `plt_addr(name, addr)` and `got_addr(name, addr)` for the JMP_SLOT imports (PLT stub from the section layout, GOT entry from the relocation offset): a ROP chain resolves addresses from facts instead of hand-parsed banners. `plt(name)` stays the rule vocabulary.
 
 - Technique packs: complete techniques as YAML data (rules, KB, MCTS
   transitions, priors, mandatory provenance), validated by the armor

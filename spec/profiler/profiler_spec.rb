@@ -33,6 +33,18 @@ RSpec.describe AugureProfiler::Profiler do
       expect(facts.rel("vuln_hint")).to include(["unsafe_func:gets"])
     end
 
+    it "emits plt_addr and got_addr for the JMP_SLOT imports (the builder needs addresses)" do
+      # plt(name) is the rule vocabulary; plt_addr(name, addr) and
+      # got_addr(name, addr) carry the addresses a ROP chain resolves
+      facts = described_class.new(vuln).facts
+      addrs = facts.rel("plt_addr")
+      expect(addrs).not_to be_empty
+      addrs.each { |(name, addr)| expect(addr).to be_an(Integer) }
+      gots = facts.rel("got_addr")
+      expect(gots.map(&:first)).to eq(addrs.map(&:first)) # one entry per JMP_SLOT import, same order
+      gots.each { |(_, addr)| expect(addr).to be > 0 }
+    end
+
     it "does NOT emit plt for a local function named like an import" do
       # the ret2plt trap: plt("system") on a local function makes the
       # decision layer believe a PLT stub exists that does not

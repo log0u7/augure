@@ -77,6 +77,7 @@ module AugureProfiler
       @elf.symbols.each do |sym|
         facts.add("plt", sym.name) if plt_symbol?(sym)
       end
+      emit_plt_addresses(facts)
       names.each do |n|
         facts.add("vuln_hint", "unsafe_func:#{n}") if UNSAFE_SYMBOLS.include?(n)
       end
@@ -94,6 +95,27 @@ module AugureProfiler
         facts.add("canary", "true")
       else
         facts.add("canary", "false")
+      end
+    end
+
+    # The addresses a ROP chain resolves against: the JMP_SLOT
+    # relocations carry the GOT entry (r_offset) and the PLT stub is
+    # computable from the section layout (.plt.sec: 16*i; .plt: 16*(i+1)).
+    def emit_plt_addresses(facts)
+      plt_sec = @elf.sections.find { |s| s.name.to_s == ".plt.sec" }
+      plt = @elf.sections.find { |s| s.name.to_s == ".plt" }
+      jmp_slots = @elf.relocations.select { |r| r.type.to_s.include?("JMP_SLOT") }
+      jmp_slots.each_with_index do |r, i|
+        name = r.symbol&.name
+        next unless name.is_a?(String) && !name.empty?
+
+        stub = if plt_sec
+          plt_sec.addr.to_i + 16 * i
+        else
+          plt && (plt.addr.to_i + 16 * (i + 1))
+        end
+        facts.add("got_addr", name, r.offset.to_i) if r.offset
+        facts.add("plt_addr", name, stub) if stub
       end
     end
 
