@@ -114,23 +114,28 @@ module Augure
           source: "__libc_start_main@plt exposes libc base" do |c|
           c.fact "vuln", "sof"
           c.fact "plt", "__libc_start_main"
+          c.not_fact "seccomp", "true"
         end
         b.rule :app_ret2libc_libc, ["applicable", "ret2libc"],
           source: "libc known/version pinned: offsets computable" do |c|
           c.fact "vuln", "sof"
           c.fact "libc_present", "true"
+          c.not_fact "seccomp", "true"
         end
         b.rule :app_rop, ["applicable", "rop"],
           source: "NX on with gadget supply: chain primitives" do |c|
           c.fact "vuln", "sof"
           c.fact "nx", "true"
           c.fact "enough_gadgets", "true"
+          c.not_fact "seccomp", "true"
         end
         b.rule :app_srop, ["applicable", "srop"],
           source: "sigreturn frame + syscall gadget: full register set" do |c|
           c.fact "vuln", "sof"
+          c.fact "nx", "true"
           c.fact "sigreturn_frame", "true"
           c.fact "has_syscall_gadget", "true"
+          c.not_fact "seccomp", "true"
         end
         b.rule :app_ret2plt_leak, ["applicable", "ret2plt_leak"],
           source: "PIE on: leak via puts@plt with register control" do |c|
