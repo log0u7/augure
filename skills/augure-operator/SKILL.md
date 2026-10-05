@@ -54,12 +54,13 @@ you are missing before doubting the rule.
 ## Writing a technique pack (teaching augure)
 
 1. Read `docs/pack-format.md` in the augure repo (the format, the
-   6 armor checks).
+   10 armor checks).
 2. Copy `packs/ret2csu_v2.yml` (the canonical example) - change the
    substance, keep the structure.
 3. Conditions: ONLY `[fact, rel, val]`, `[not_fact, rel, val]` (input
    facts only), `[match, rel, idx, pattern]`, `[cmp, rel, op, n]`.
-   Predicates: the 27 input facts (binary vocabulary + the network
+   Predicates: the 33 input facts (binary vocabulary + the address
+   facts plt_addr/got_addr + the leaks leaked_address + the network
    vocabulary from nmap scans: service/software_version/remote; the
    confidence marker: verified) + built-in derived relations. Nothing
    invented.
