@@ -19,7 +19,7 @@ description: Operate the augure/lictor auditable exploitation decision layer - v
 - You improvise BETWEEN the steps (which binary, which input, what the
   crash means) - never against the rules.
 
-## The full chain (14 steps, all recorded in the trail)
+## The full chain (15 steps, all recorded in the trail)
 
 ```sh
 lictor init                                 # fresh setup (scaffolds config)

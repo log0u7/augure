@@ -66,7 +66,7 @@ verdict.
 ## Troubleshooting
 
 - **`:unknown` with a solver installed** - run the emitted text manually:
-  `augure ... ` no; simply `z3 < smt.txt` and read its stdout. Augure only
+  `z3 < smt.txt` and read its stdout. Augure only
   parses a bare `sat`/`unsat` token; solver banners are fine, they are
   ignored.
 - **Permission denied** - the solver path is not executable; give the

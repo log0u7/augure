@@ -7,7 +7,7 @@ selection from Datalog facts; never executes anything.
 
 ## Commands
 
-- Test: `bundle exec rspec` (all green required, 143+ examples)
+- Test: `bundle exec rspec` (all green required, 165 examples)
 - Lint: `bundle exec standardrb` (zero offenses required, `--fix` available)
 - Audit: `bundle exec bundler-audit`
 - CLI: `bundle exec ruby exe/augure analyze examples/ret2win.facts --json`
@@ -17,7 +17,7 @@ selection from Datalog facts; never executes anything.
 1. **TDD**: failing test first. Bug fix = regression test first. No prod
    code without a test demanding it.
 2. **Zero runtime dependencies** in the gemspec. Externals (solvers, LLM,
-   Souffle) only via subprocess/HTTP boundaries.
+   SMT solvers) only via subprocess/HTTP boundaries.
 3. **Rules are data**: technique logic goes in `lib/augure/rules.rb` table,
    never in ad-hoc code. The corpus conformance spec
    (`lib/augure/ctf_corpus.json`, shipped in the gem) is the contract: a rules change that

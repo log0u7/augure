@@ -13,7 +13,7 @@ an auditable decision layer possible at all:
 
 - **Provenance**: only data can answer "which rule fired because of which
   facts" - a case statement cannot explain itself.
-- **A second engine**: rules-as-data can be generated into a Souffle .dl
+- **A second engine**: rules-as-data can be generated into a the frozen corpus .dl
   program, so a compiled Datalog engine and the Ruby engine can be
   conformance-tested against each other - the frozen corpus catches any
   drift between them.
@@ -57,7 +57,7 @@ as a diagram.
 
 ## Subprocesses are the API policy
 
-Soufflé, SMT solvers, LLM providers: every external capability enters
+SMT solvers, LLM providers: every external capability enters
 through a serialization boundary (facts text, SMT-LIB text, HTTP). That is
 what makes the zero-runtime-dependency gem possible, keeps native-extension
 attack surface at zero, and lets a consumer swap bitwuzla for cvc5 or an

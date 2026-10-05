@@ -31,14 +31,14 @@ bin/console                # IRB with the API pre-loaded (ret2win facts)
 3. **Branches.** `feat/<scope>`, `fix/<scope>`, `chore/<scope>`, `docs/<scope>`
    off `main`. `main` stays green. During bootstrap we merge locally with
    `--no-ff`; pull requests with review become mandatory once the project is
-   team-stable (the PR template and branch protection are ready for that day).
+   team-stable (the repository conventions are ready for that day).
 4. **SemVer.** Development is `0.y.z`: minor bumps may break. `1.0.0` waits for
    a stable public API. Tag releases on `main` as `vX.Y.Z` *after* the merge.
 5. **CHANGELOG.md.** Every feature/fix lands in `[Unreleased]` in the same
    commit as the change. Releases move `[Unreleased]` to a dated section.
    No release without a changelog entry.
 6. **Zero runtime dependencies.** The core gem ships with no runtime deps.
-   External engines (Soufflé, SMT solvers, LLM providers) enter only through
+   External engines (SMT solvers, LLM providers) enter only through
    subprocess/HTTP boundaries.
 7. **No exploit code, ever.** The repo encodes technique *metadata* (rules,
    facts, checks), never payloads. See the acceptable-use section in README.

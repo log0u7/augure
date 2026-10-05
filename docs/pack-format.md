@@ -39,20 +39,36 @@ mcts:
   terminal: false                # true only if it yields a shell
   success: 0.7                   # the planner's base success
 priors: [14, 6]                  # Beta(alpha, beta): mean 0.7 here
+
+# All three sections below are OPTIONAL:
+build:                           # (check 8) the assembly order - packs
+  technique: my_new_technique    # teach, lictor's builder follows
+  layout:                        # slots: padding/qword/dword/shellcode/chain
+    - [padding, measured_offset]
+    - [chain, "gadget:pop_rdi_ret", "plt_addr:system"]
+
+detection:                       # (check 9) the DEFENDER side - what the
+  - channel: wire                # technique looks like to the defenses;
+    signature: "cyclic padding then a non-mapped return"  # channel from
+    note: "the padding phase"    # wire/syslog/syscall/crash/file
+
+mitre:                           # (check 10) the ATT&CK mapping
+  - T1068
 ```
 
 ## The checks (in the order the loader runs them)
 
 1. **Condition vocabulary**: only `fact`, `not_fact`, `match`, `cmp`.
    Anything else - including "clever" ones - is refused.
-2. **Existing predicates only**: your conditions may reference the 27
+2. **Existing predicates only**: your conditions may reference the 33
    input facts (see `docs/reference.md#schema` - the binary vocabulary:
-   nx/pie/canary/plt/gadget...; the network vocabulary, emitted from
-   nmap scans: service/software_version/remote; the confidence marker:
-   verified) and the built-in derived relations (`vuln`,
-   `has_reg_control`, `has_write_primitive`, `has_syscall_gadget`,
-   `has_csu_gadget`, `has_pivot_gadget`, `enough_gadgets`). You cannot
-   invent a fact source.
+   nx/pie/canary/plt/gadget/plt_addr/got_addr...; the network vocabulary,
+   emitted from nmap scans: service/software_version/remote; the
+   confidence marker: verified; the leaks: leaked_address) and the
+   built-in derived relations (`vuln`, `has_reg_control`,
+   `has_write_primitive`, `has_syscall_gadget`, `has_csu_gadget`,
+   `has_pivot_gadget`, `enough_gadgets`). You cannot invent a fact
+   source.
 3. **Stratification**: `not_fact` on input facts only.
 4. **New heads only**: your technique must be NEW. Overriding
    `ret2plt` or any built-in is refused - the corpus owns those verdicts.
@@ -62,7 +78,24 @@ priors: [14, 6]                  # Beta(alpha, beta): mean 0.7 here
    targets must keep their documented ranking (your technique may rank
    BELOW the documented top). A pack that takes the top-1 of a
    documented target is refused - claiming better on frozen truth is a
-   dev-time corpus update, not a runtime pack.
+   dev-time corpus update, not a runtime pack. Two documented
+   exceptions: an entry with an EMPTY built-in verdict has nothing to
+   move (additive packs extend it), and an entry documenting
+   `pack_verdict: <technique>` polices the pack answer's ARRIVAL
+   instead - the pwnable/orw case.
+7. **match patterns and cmp operands fail at load**: a `match` pattern
+   is precompiled (`RegexpError` at load, not at decision); `cmp`
+   operands must be integers and operators from the engine's table -
+   `"26"` or a typo'd operator never reaches the engine.
+8. **build: (optional)**: must name its own technique; the layout must
+   be a non-empty slot list from the vocabulary
+   (padding/qword/dword/shellcode/chain). The builder interprets; the
+   armor gates the vocabulary.
+9. **detection: (optional)**: each entry needs a `channel` from
+   wire/syslog/syscall/crash/file plus a concrete `signature` and
+   `note` - a vague hint is not detection content.
+10. **mitre: (optional)**: an array of ATT&CK technique codes
+    (`T1068`, `T1068.001`) only.
 
 ## The optional `build:` and `detection:` sections
 
@@ -100,4 +133,5 @@ operator reads the validated pack before installing it.
 - If validation refuses you, read the refusal - each check names its
   reason. Fix the data; never look for a way around the armor.
 - One pack = one technique. Split OR-conditions into sibling rules
-  sharing the head; the provenance then tells which reason fired.
+  sharing the head; the provenance then carries EVERY reason that
+  fired, each attributed to its own rule.

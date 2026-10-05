@@ -57,6 +57,8 @@ You should see:
 applicable: ret2plt, rop
 selected:   ret2plt
 plan:       ret2plt
+# (selected is a seeded Thompson draw: same facts + same --seed = same
+#  selection, always. Unseeded, the draw explores the ranking.)
   ret2plt <- app_ret2plt (vuln=sof, nx=true, pie=false, plt=system)
   rop     <- app_rop (vuln=sof, nx=true, enough_gadgets=true)
 ```
@@ -70,7 +72,8 @@ favor of a ROP chain. The rules, not the reflex, made the call.
 augure analyze target.facts --json | head -30
 ```
 
-Find the `explain.provenance` block: the rule ID and the exact facts that
+Find the `explain.provenance` block (the JSON is long: `grep -A 20 provenance`
+after the pipe) - the rule ID, the evidence pairs, and the origin that
 fired it. That block is the whole product: hand it to a colleague, they can
 verify the decision without rerunning anything.
 

@@ -2,7 +2,7 @@
 
 *Explanation. This page is the "why" behind the `explain` payload.*
 
-## What auditability means here
+## The tools (the narrative runs)
 
 > The narrative below is now a TOOL: `augure coverage --flip
 > canary:true` replays the corpus under a hardening override and
@@ -17,17 +17,22 @@ Every decision Augure produces is a set of readable proofs, not a score:
 
 ```json
 {
+  "schema": "augure/decision@1",
   "selected": "ret2plt",
   "explain": {
     "provenance": {
       "ret2plt": [{
         "rule": "app_ret2plt",
-        "evidence": ["vuln=sof", "nx=true", "pie=false", "plt=system"]
+        "origin": null,
+        "evidence": [["vuln", "sof"], ["nx", "true"], ["pie", "false"], ["plt", "system"]]
       }]
     }
   }
 }
 ```
+
+When sibling rules share a head (the documented way to express OR),
+EVERY firing appears - each attributed to its own rule id and origin.
 
 Three properties fall out of that shape:
 
