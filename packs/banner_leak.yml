@@ -39,3 +39,8 @@ detection:
   - channel: syslog
     signature: "short-lived connections that read only the greeting"
     note: "a leak pass: connect-read-close, no input sent"
+
+# The ATT&CK mapping (the navigator export consumes it)
+mitre:
+  - T1592
+  - T1595

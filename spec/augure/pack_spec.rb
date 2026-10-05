@@ -69,6 +69,18 @@ RSpec.describe Augure::Pack do
         .to raise_error(Augure::PackError, /build.*slot/)
     end
 
+    it "exposes an optional mitre: field (the ATT&CK mapping)" do
+      mapped = pack_yaml("mitre" => ["T1068"])
+      pack = described_class.load_hash(mapped)
+      expect(pack.mitre).to eq(["T1068"])
+    end
+
+    it "rejects a mitre: entry that is not a T-code (check 10)" do
+      bad = pack_yaml("mitre" => ["not-a-code"])
+      expect { described_class.load_hash(bad) }
+        .to raise_error(Augure::PackError, /mitre/)
+    end
+
     it "exposes an optional detection: section (the defender side)" do
       watched = pack_yaml("detection" => [
         {"channel" => "wire", "signature" => "cyclic pattern of >= 40 bytes", "note" => "the padding phase"},

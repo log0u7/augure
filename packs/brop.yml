@@ -40,3 +40,7 @@ detection:
   - channel: crash
     signature: "child SIGSEGV on long inputs, the service keeps accepting"
     note: "the crash oracle being exercised"
+
+# The ATT&CK mapping (the navigator export consumes it)
+mitre:
+  - T1068

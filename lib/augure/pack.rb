@@ -18,7 +18,7 @@ module Augure
   class Pack
     CONDITION_VOCABULARY = %w[fact not_fact match cmp].freeze
 
-    attr_reader :technique, :author, :source, :rules, :kb, :mcts, :priors, :build, :detection
+    attr_reader :technique, :author, :source, :rules, :kb, :mcts, :priors, :build, :detection, :mitre
 
     def self.load_file(path)
       data = YAML.safe_load_file(path, permitted_classes: [], aliases: false)
@@ -66,6 +66,7 @@ module Augure
       validate_priors(@data["priors"])
       validate_build(@data["build"])
       validate_detection(@data["detection"])
+      validate_mitre(@data["mitre"])
       build_rules
     end
 
@@ -190,6 +191,19 @@ module Augure
         end
       end
       @detection = detection
+    end
+
+    # armor check 10: the optional mitre: mapping - ATT&CK technique
+    # codes (T####[.###]); the export layer (rules --mitre) consumes it.
+    MITRE_CODE = /\AT\d{4}(?:\.\d{3})?\z/
+
+    def validate_mitre(mitre)
+      return if mitre.nil?
+
+      unless mitre.is_a?(Array) && !mitre.empty? && mitre.all? { |c| c.is_a?(String) && c.match?(MITRE_CODE) }
+        reject "mitre: must be an array of ATT&CK technique codes (T1068, T1068.001)"
+      end
+      @mitre = mitre
     end
 
     def validate_build(build)

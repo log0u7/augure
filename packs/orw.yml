@@ -48,3 +48,8 @@ detection:
   - channel: crash
     signature: "SIGSYS (bad system call) following an execve attempt"
     note: "the filter doing its job - the operator probed execve"
+
+# The ATT&CK mapping (the navigator export consumes it)
+mitre:
+  - T1083
+  - T1056

@@ -39,3 +39,7 @@ detection:
   - channel: crash
     signature: "execution redirected into the heap or a fake fd target"
     note: "the hook firing into attacker memory"
+
+# The ATT&CK mapping (the navigator export consumes it)
+mitre:
+  - T1068

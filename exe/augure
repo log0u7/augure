@@ -31,6 +31,7 @@ parser = OptionParser.new do |opts|
     (options[:flips] ||= {})[name] = ((value == "nil") ? nil : value)
   end
   opts.on("--facts FILE", "Coverage: one facts entry instead of the corpus") { |v| options[:facts_entry] = v }
+  opts.on("--mitre", "rules: export the ATT&CK navigator layer (from the packs' mitre: fields)") { options[:mitre] = true }
   opts.on("--version", "Print the version") do
     puts VERSION_LINE
     exit 0
@@ -87,6 +88,25 @@ when "doctor"
     abort("augure: doctor found #{n} issue(s) - fixes above")
   end
 when "rules"
+  if options[:mitre]
+    mitre_by_pack = {}
+    packs_dir = options[:packs] || "packs"
+    Dir.glob(File.expand_path(File.join(packs_dir, "*.yml"))).each do |path|
+      pack = Augure::Pack.load_file(path)
+      (mitre_by_pack[pack.technique] = pack.mitre) if pack.mitre
+    rescue
+      nil
+    end
+    if options[:json]
+      puts JSON.pretty_generate("schema" => "augure/mitre-navigator@1", "layers" => [{
+        "name" => "augure techniques", "versions" => {"attack" => "14", "navigator" => "4.9"},
+        "techniques" => mitre_by_pack.map { |tech, codes| codes.map { |c| {"techniqueID" => c, "score" => 1, "comment" => tech} } }.flatten
+      }])
+      exit 0
+    end
+    mitre_by_pack.each { |tech, codes| puts "#{tech}\t#{codes.join(", ")}" }
+    exit 0
+  end
   Augure::Rules.all.each do |rule|
     puts rule.id
     puts "  head: #{rule.head.join("=")}"

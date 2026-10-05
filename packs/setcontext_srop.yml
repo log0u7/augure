@@ -40,3 +40,7 @@ detection:
   - channel: crash
     signature: "register sets that never came from a signal delivery"
     note: "the forged context"
+
+# The ATT&CK mapping (the navigator export consumes it)
+mitre:
+  - T1068
