@@ -8,6 +8,8 @@ module Augure
   # stay identical - a pack that moves an existing decision is refused
   # at load time, not discovered in production.
   module PackLoader
+    CORPUS_CACHE = {}
+    BASE_DECISIONS = {}
     module_function
 
     def load_file(path)
@@ -22,10 +24,13 @@ module Augure
     # impossible; this proves it on every load.
     def corpus_guard(packs, corpus_path: nil)
       corpus_path ||= File.join(__dir__, "ctf_corpus.json")
-      corpus = JSON.parse(File.read(corpus_path))
+      corpus = CORPUS_CACHE[corpus_path] ||= JSON.parse(File.read(corpus_path))
+      # The "before" decisions depend only on the built-in rules and the
+      # base priors - identical across every guard run. Cached.
       base_priors = Pipeline.default_priors
       corpus["suites"].values.flatten.each do |entry|
-        before = Pipeline.analyze(facts: entry["facts"], priors: base_priors, plan: false)
+        before = BASE_DECISIONS[[corpus_path, entry["name"]]] ||=
+          Pipeline.analyze(facts: entry["facts"], priors: base_priors, plan: false)
         after = Pipeline.analyze(facts: entry["facts"], priors: priors_with(packs, base_priors),
           packs: packs, plan: false)
         # A documented pack verdict is not a mover: the frozen entry may

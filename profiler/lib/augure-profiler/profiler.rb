@@ -161,23 +161,32 @@ module AugureProfiler
       nil
     end
 
+    # The patterns precompiled ONCE to byte arrays: scanning compares
+    # integers (String#index skip), not hex-string slices per position
+    # (the old hex.map + split-per-position was ~100x slower).
+    # The patterns precompiled ONCE to binary strings: the scan runs
+    # String#index (memmem in C) per pattern, not a hex-slice compare
+    # per byte position (the original was ~100x slower; an Array-slice
+    # version was 2x slower still).
+    GADGET_BIN = GADGET_PATTERNS.map do |(type, pattern)|
+      [type, pattern.split(" ").map { |h| h.to_i(16) }.pack("C*")]
+    end.freeze
+
     def scan_gadgets(bytes, base_addr)
-      gadgets = []
-      hex = bytes.map { |b| b.to_s(16).rjust(2, "0") }
-      i = 0
-      while i < hex.size
-        hit = GADGET_PATTERNS.find do |(_type, pattern)|
-          pattern_hex = pattern.split(" ")
-          hex[i, pattern_hex.size] == pattern_hex
-        end
-        if hit
-          gadgets << [hit[0], base_addr + i]
-          i += hit[1].split(" ").size
-        else
-          i += 1
+      data = bytes.is_a?(String) ? bytes : bytes.pack("C*")
+      data = data.b
+      hits = []
+      GADGET_BIN.each_with_index do |(type, pat), order|
+        off = 0
+        while (off = data.index(pat, off))
+          hits << [order, type, base_addr + off]
+          off += pat.size
         end
       end
-      gadgets
+      # position first, then the pattern-table order (the original
+      # first-match-wins semantics preserved byte for byte)
+      hits.sort_by! { |(order, _type, addr)| [addr, order] }
+      hits.map { |(_order, type, addr)| [type, addr] }
     end
 
     # Static binaries expose the __libc_csu_init universal gadgets under

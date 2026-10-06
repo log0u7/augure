@@ -106,10 +106,15 @@ module Augure
           node = root
           # 1. Selection
           node = node.children.max_by { |n| n.ucb1(node.visits) } while node.untried.empty? && !node.children.empty?
-          # 2. Expansion
+          # 2. Expansion. A child whose capability set equals its
+          # parent's adds nothing (the degenerate-tree case: the walk
+          # grows ~iterations deep, selection+backprop O(iterations^2)).
+          # Such nodes are not expanded - the parent absorbs them.
           unless node.untried.empty?
             tech = node.untried.pop
             new_caps = transition(node.caps, tech, model: model)
+            next if new_caps == node.caps && !terminal?(new_caps, model: model)
+
             child = Node.new(caps: new_caps, technique_used: tech, parent: node)
             child.untried = terminal?(new_caps) ? [] : available(new_caps, allowed, model: model)
             node.children << child

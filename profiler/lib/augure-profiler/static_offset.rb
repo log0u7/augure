@@ -35,23 +35,11 @@ module AugureProfiler
       @unsafe_addrs = unsafe.invert
 
       text = elf.sections.find { |s| s.name == ".text" }
-      cpu = (arch == :x64) ? Metasm::X64.new : Metasm::Ia32.new
-      sc = Metasm::Shellcode.new(cpu)
-      sc.base_addr = text.addr
-      sc.encoded = Metasm::EncodedData.new(section_data(@path, text))
-      ds = sc.disassemble(text.addr)
-      # flow analysis dies at the indirect __libc_start_main call: seed
-      # every function symbol so the whole .text is covered
-      elf.symbols.select do |sym|
-        sym.type.to_s == "FUNC" && sym.value.to_i >= text.addr && sym.value.to_i < text.addr + text.size.to_i
-      end
-        .each { |sym| ds.disassemble(sym.value) }
-
-      instrs = ds.decoded.to_a.sort_by { |a, _| a }.map { |a, di| [a, di.instruction] }
-      # The flow graph may miss call sites (indirect-libc stopovers), so
-      # a linear e8 rel32 scan nets every call to an unsafe stub.
       data = section_data(@path, text)
       bytes = data.bytes
+      # The CHEAP scan first: a linear e8 rel32 walk nets every call to
+      # an unsafe stub - the full .text disassembly (minutes on a 1MB
+      # text) is only needed if this finds nothing.
       call_site = nil
       sink = nil
       bytes.each_index do |i|
@@ -64,21 +52,40 @@ module AugureProfiler
         sink = name
         break
       end
-      call_idx = instrs.index do |_a, instr|
-        next false unless instr.opname == "call"
+      unless call_site
+        # LAST RESORT: the flow disassembly of the whole .text (minutes
+        # on a 1MB text - the e8 scan above almost always wins).
+        cpu = (arch == :x64) ? Metasm::X64.new : Metasm::Ia32.new
+        sc = Metasm::Shellcode.new(cpu)
+        sc.base_addr = text.addr
+        sc.encoded = Metasm::EncodedData.new(data)
+        ds = sc.disassemble(text.addr)
+        elf.symbols.select do |sym|
+          sym.type.to_s == "FUNC" && sym.value.to_i >= text.addr && sym.value.to_i < text.addr + text.size.to_i
+        end
+          .each { |sym| ds.disassemble(sym.value) }
+        instrs = ds.decoded.to_a.sort_by { |a, _| a }.map { |a, di| [a, di.instruction] }
+        call_idx = instrs.index do |_a, instr|
+          next false unless instr.opname == "call"
 
-        arg = instr.args.first
-        arg.respond_to?(:expression) ? @unsafe_addrs.key?(arg.expression.reduce.to_i) : false
+          arg = instr.args.first
+          arg.respond_to?(:expression) ? @unsafe_addrs.key?(arg.expression.reduce.to_i) : false
+        end
+        call_site = call_idx && instrs.dig(call_idx, 0)
+        if call_site
+          instr = instrs.dig(call_idx, 1)
+          arg = instr&.args&.first
+          sink = arg.respond_to?(:expression) ? @unsafe_addrs[arg.expression.reduce.to_i] : nil
+        end
       end
-      result = nil
-      if call_site
-        result = frame_bytes(data, call_site - text.addr, arch)
-      elsif call_idx
-        result = frame_disp(instrs, call_idx, arch)
+      result = if call_site && call_site.is_a?(Integer)
+        frame_bytes(data, call_site - text.addr, arch)
+      elsif call_site
+        frame_disp(instrs, call_idx, arch)
       end
       result&.tap do |r|
         r[:sink] ||= sink
-        site = call_site || (call_idx && instrs.dig(call_idx, 0))
+        site = call_site
         r[:function] = enclosing_function(elf, site.to_i)
       end
     rescue Metasm::ParseError, Metasm::InvalidExeFormat
