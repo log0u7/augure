@@ -24,7 +24,7 @@ rows["decision (plan, MCTS)"] = "#{ms { 20.times { Augure::Pipeline.analyze(fact
 rows["decision (no MCTS)"] = "#{ms { 20.times { Augure::Pipeline.analyze(facts: facts, plan: false) } } / 20.0} ms/dec"
 
 packs = Augure::PackLoader.load_dir(File.expand_path("../packs", __dir__))
-rows["pack load (20 packs)"] = "#{ms { Augure::PackLoader.load_dir(File.expand_path('../packs', __dir__)) }} ms"
+rows["pack load (20 packs)"] = "#{ms { Augure::PackLoader.load_dir(File.expand_path("../packs", __dir__)) }} ms"
 rows["corpus guard (20 packs)"] = "#{ms { Augure::PackLoader.corpus_guard(packs) }} ms"
 
 rows["facts parse"] = "#{ms { 50.times { Augure::Facts.parse(facts) } } / 50.0} ms/parse"
@@ -44,7 +44,7 @@ src = File.join(dir, "big.c")
 File.write(src, "#include <stdio.h>\nint main(void){ puts(\"x\"); return 0; }\n")
 bin_small = File.join(dir, "small")
 system("gcc", "-o", bin_small, src, "-no-pie", out: File::NULL) || system("gcc", "-o", bin_small, src)
-rows["profile /bin/ls (142KB .text)"] = "#{ms { AugureProfiler::Profiler.new('/bin/ls').facts }} ms"
+rows["profile /bin/ls (142KB .text)"] = "#{ms { AugureProfiler::Profiler.new("/bin/ls").facts }} ms"
 big = "/usr/bin/gcc"
 if File.exist?(big) && File.size(big) > 500_000
   rows["profile gcc-13 (#{File.size(big) / 1024}KB)"] = "#{ms { AugureProfiler::Profiler.new(big).facts }} ms"

@@ -10,6 +10,7 @@ module Augure
   module PackLoader
     CORPUS_CACHE = {}
     BASE_DECISIONS = {}
+
     module_function
 
     def load_file(path)

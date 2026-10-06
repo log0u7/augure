@@ -73,12 +73,11 @@ module AugureProfiler
         end
         call_site = call_idx && instrs.dig(call_idx, 0)
         if call_site
-          instr = instrs.dig(call_idx, 1)
-          arg = instr&.args&.first
-          sink = arg.respond_to?(:expression) ? @unsafe_addrs[arg.expression.reduce.to_i] : nil
+          arg = instrs.dig(call_idx, 1)&.args&.first
+          sink = arg&.respond_to?(:expression) ? @unsafe_addrs[arg.expression.reduce.to_i] : nil
         end
       end
-      result = if call_site && call_site.is_a?(Integer)
+      result = if call_site.is_a?(Integer) # nil or Integer: nil.is_a? is false
         frame_bytes(data, call_site - text.addr, arch)
       elsif call_site
         frame_disp(instrs, call_idx, arch)
