@@ -156,12 +156,14 @@ audit begins with this sentence.
 | 33/33 classification parity | `lib/augure/ctf_corpus.json`, `spec/augure/engine_spec.rb` |
 | 5/5 plan parity (incl. PinTheft kernel chain) | `spec/augure/mcts_spec.rb` |
 | Ruby engine == frozen Python engine | corpus conformance specs, CI-enforced |
+| MEASURED vs a typed-decision classifier (Laya, open weights): 5/5 vs 1/5 on the discriminantes, 8.5 ms vs ~3-5 s on CPU | `pappers/laya-bench.py`, the measurement story in the augure-lictor draft |
 
 ## Why not just ask an LLM?
 
 | | LLM alone | Augure |
 |---|---|---|
 | recommends `ret2libc` with no libc | confidently | structurally impossible (a rule forbids it) |
+| the 5 discriminantes (the fact text as state, the 16 heads as choices, measured) | a typed-decision model answered **1/5**, confident-and-wrong (0.93-0.98 on its errors) | **5/5**, 8.5 ms warm with the MCTS |
 | explains *why* | plausible prose | rule ID + facts + checks + seeded draw |
 | reproducible | no | same seed, same decision |
 | terminates | usually | provably (Datalog) |
