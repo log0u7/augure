@@ -15,12 +15,12 @@ jobs:
       - name: Build the three gems
         run: |
           gem build augure.gemspec
-          gem build profiler/augure-profiler.gemspec
-          gem build mcp_server/augure-mcp.gemspec
+          (cd profiler && gem build augure-profiler.gemspec)
+          (cd mcp_server && gem build augure-mcp.gemspec)
       - name: Push to rubygems.org (scoped key, secrets never logged)
         env:
           RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: |
           gem push augure-*.gem --key RUBYGEMS_API_KEY --host https://rubygems.org
-          gem push augure-profiler-*.gem --key RUBYGEMS_API_KEY --host https://rubygems.org
-          gem push augure-mcp-*.gem --key RUBYGEMS_API_KEY --host https://rubygems.org
+          gem push profiler/augure-profiler-*.gem --key RUBYGEMS_API_KEY --host https://rubygems.org
+          gem push mcp_server/augure-mcp-*.gem --key RUBYGEMS_API_KEY --host https://rubygems.org
