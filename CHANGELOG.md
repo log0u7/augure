@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- README art recompressed: `augure-v0.png` 1.6M -> 642K, `augure-v1.png` 2.3M -> 1.1M
+  (256-color palette with dithering; repo weight only, no content change).
 - The `cve` fact (the CVE/KEV bridge): an agent or the operator proposes the CVE id as a fact (`cve("CVE-2024-1234").`) - the technique packs consume it like any observation. The schema + the atom grammar treat it as any string fact.
 
 - The pack DSL gains an optional `build:` section (the pack teaching the BUILDER its assembly
