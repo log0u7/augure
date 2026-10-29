@@ -39,7 +39,7 @@ RSpec.describe AugureProfiler::Profiler do
       facts = described_class.new(vuln).facts
       addrs = facts.rel("plt_addr")
       expect(addrs).not_to be_empty
-      addrs.each { |(name, addr)| expect(addr).to be_an(Integer) }
+      addrs.each { |(_name, addr)| expect(addr).to be_an(Integer) }
       gots = facts.rel("got_addr")
       expect(gots.map(&:first)).to eq(addrs.map(&:first)) # one entry per JMP_SLOT import, same order
       gots.each { |(_, addr)| expect(addr).to be > 0 }
@@ -51,8 +51,16 @@ RSpec.describe AugureProfiler::Profiler do
       # controlled-format knowledge is the operator's suggest flow
       dir = Dir.mktmpdir
       src = File.join(dir, "printf_user.c")
-      File.write(src, "int main(void) { printf(\"constant\\n\"); return 0; }")
-      bin = BinaryBuilder.gcc(dir, src, "printf_user")
+      # stdio.h is required on gcc 14 (C23 makes an implicit printf a
+      # hard error) and -fno-builtin-printf stops gcc folding the call
+      # to puts: the fixture must import printf for the knowledge rule
+      # to be exercised at all.
+      File.write(src, <<~C)
+        #include <stdio.h>
+
+        int main(void) { printf("constant\\n"); return 0; }
+      C
+      bin = BinaryBuilder.gcc(dir, src, "printf_user", "-fno-builtin-printf")
       facts = described_class.new(bin).facts
       hints = facts.rel("vuln_hint") || []
       expect(hints).not_to include(["unsafe_func:printf"])
