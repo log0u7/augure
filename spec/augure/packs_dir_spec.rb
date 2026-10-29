@@ -7,13 +7,14 @@ RSpec.describe "the shipped technique packs" do
   let(:packs) { Augure::PackLoader.load_dir(File.expand_path("../../packs", __dir__)) }
   let(:names) { packs.map(&:technique) }
 
-  it "ships the ten corpus-extending techniques plus the canonical example" do
+  it "ships the twenty corpus-extending techniques plus the canonical example" do
     expect(names).to contain_exactly(
       "ret2csu_v2", "house_force", "house_orange", "house_botcake",
       "unsorted_bin_attack", "fastbin_hook", "ret2dlresolve_x86",
       "got_partial_overwrite", "brop", "ret2partial_overwrite", "one_gadget",
       "orw", "banner_leak", "jop", "large_bin_attack", "house_of_apple2",
-      "setcontext_srop", "uaf_tcache", "ret2vdso", "got_partial_overwrite_deref"
+      "setcontext_srop", "uaf_tcache", "ret2vdso", "got_partial_overwrite_deref",
+      "callme"
     )
   end
 
