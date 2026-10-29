@@ -34,6 +34,50 @@ module ProfilerBinaryBuilder
     bin
   end
 
+  # A binary whose .text carries the callme challenge's gadget bytes
+  # (pop rsi ; pop r15 ; ret): the pattern the plain pop_rsi scan cannot
+  # see. The overlapping pop rdi (5f c3) must survive as its own fact.
+  def pop_rsi_r15(dir = Dir.mktmpdir("augure_gad"))
+    src = File.join(dir, "gadget.c")
+    File.write(src, <<~C)
+      __attribute__((noinline, used)) void the_gadget(void) {
+        __asm__ volatile(".byte 0x5e,0x41,0x5f,0xc3");
+      }
+      int main(void) { return 0; }
+    C
+    bin = File.join(dir, "gadget_bin")
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-no-pie", "-O0")
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
+  # A binary that IMPORTS a win-named function (the ret2csu shape: the
+  # win lives in the companion library). The import is not a win HERE:
+  # no win_symbol, no target_function.
+  def importing_win(dir = Dir.mktmpdir("augure_win"))
+    lib_src = File.join(dir, "libwin.c")
+    File.write(lib_src, "void ret2win(void) {}\n")
+    lib = File.join(dir, "libwin.so")
+    _o, e, s = Open3.capture3("gcc", lib_src, "-shared", "-fPIC", "-o", lib)
+    raise "lib build failed: #{e}" unless s.success?
+
+    src = File.join(dir, "importer.c")
+    # the volatile global keeps the relocation alive (the compiler
+    # cannot fold it away); the function is never called
+    File.write(src, <<~C)
+      extern void ret2win(void);
+      void (*volatile keep)(void) = ret2win;
+      int main(void) { return 0; }
+    C
+    bin = File.join(dir, "importer")
+    _o, e, s = Open3.capture3("gcc", src, "-L" + dir, "-lwin", "-o", bin,
+      "-fno-stack-protector", "-no-pie", "-O0", "-Wl,-rpath," + dir)
+    raise "build failed: #{e}" unless s.success?
+
+    bin
+  end
+
   def local_system(dir = Dir.mktmpdir("augure_local"))
     # a binary whose ONLY interesting symbol is a LOCAL function named
     # exactly `system`: the ret2plt trap - if the profiler emits
