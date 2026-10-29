@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-29
+
+- The callme technique pack: three consecutive PLT calls with the
+  challenge's magic argument triple, the layout taught in the pack
+  (pop_rdi / pop_rsi_r15 / pop_rdx, no leak needed on the non-PIE
+  corpus binary), validated through the full armor.
+- The ret2csu_v2 pack's build layout now teaches the WIN call measured
+  end to end on the corpus binary: the csu pair populates rsi/rdx (the
+  newer gcc flavor truncates edi, rdi never rides the csu), the mov
+  block's mandatory call lands on _fini through the .dynamic DT_FINI
+  cell (a no-op call preserving every argument register), the
+  seven-slot junk slide absorbs the loop epilogue, then pop_rdi
+  carries the full 64-bit first argument. The canonical puts leak
+  stays documented as the reference variant.
+- Profiler: `pop rsi; pop r15; ret` joins the gadget vocabulary (the
+  callme flavor a bare `pop rsi; ret` scan cannot see).
+- Profiler: the csu gadgets are located by byte signature inside
+  __libc_csu_init's extent - the popper fact aims at the pop rbx
+  epilogue (the chain entry), not at the symbol entry; the mov block
+  is found through the call signature (both known compiler flavors).
+  The entry/+0x40 guess produced unexecutable addresses.
+- Profiler: a win-named IMPORT is not a win here - the ret2csu shape
+  imports its ret2win from the companion library (value 0); emitting
+  win_symbol for it made the ret2func layout build a jump to NULL.
+  Defined symbols only.
+- Profiler fixture: `#include <stdio.h>` added (gcc 14 / C23 rejects an implicit
+  printf declaration, breaking CI since the runner update) and `-fno-builtin-printf`
+  passed to gcc so the fixture really imports printf: gcc folds the call to puts
+
 - Profiler fixture: `#include <stdio.h>` added (gcc 14 / C23 rejects an implicit
   printf declaration, breaking CI since the runner update) and `-fno-builtin-printf`
   passed to gcc so the fixture really imports printf: gcc folds the call to puts

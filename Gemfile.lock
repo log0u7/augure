@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    augure (0.1.0)
+    augure (0.2.0)
 
 PATH
   remote: mcp_server
@@ -13,7 +13,7 @@ PATH
 PATH
   remote: profiler
   specs:
-    augure-profiler (0.0.1)
+    augure-profiler (0.0.2)
       augure (~> 0.1)
       metasm (~> 1.0)
 
