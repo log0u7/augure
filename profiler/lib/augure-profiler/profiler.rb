@@ -23,6 +23,7 @@ module AugureProfiler
       ["int80_ret", "cd 80 c3"],            # int 0x80 ; ret
       ["pop_rdi_ret", "5f c3"],             # pop rdi ; ret
       ["pop_rsi_ret", "5e c3"],             # pop rsi ; ret
+      ["pop_rsi_r15_ret", "5e 41 5f c3"],   # pop rsi ; pop r15 ; ret (the callme flavor)
       ["pop_rdx_ret", "5a c3"],             # pop rdx ; ret
       ["pop_rax_ret", "58 c3"],             # pop rax ; ret
       ["JMP_STACK", "ff e4"],               # jmp esp/rsp - renamed per arch
@@ -47,6 +48,34 @@ module AugureProfiler
       emit_symbols(facts)
       emit_gadgets(facts)
       facts
+    end
+
+    # the csu byte signatures, both known compiler flavors: the popper
+    # = pop rbx,rbp,r12,r13,r14,r15 ; ret (the chain re-enters at the
+    # pop rbx), the mov block ends in the csu call signature and starts
+    # 9 bytes earlier (three 3-byte register movs, REX.W/REX.WR 0x89
+    # opcodes - the mov order is the compiler's choice: r15->rdx on
+    # recent gcc, r13->rdx on the classic layout)
+    CSU_POPPER_BIN = ["5b5d415c415d415e415fc3"].pack("H*").freeze
+    CSU_CALL_BIN = ["41ff14dc"].pack("H*").freeze
+
+    def self.csu_gadget_addrs(bytes, base, extent)
+      win = bytes.is_a?(String) ? bytes.b : bytes.pack("C*").b
+      win = win.byteslice(0, extent) if extent && extent < win.bytesize
+      popper = win.index(CSU_POPPER_BIN)
+      mov = find_csu_mov(win)
+      {popper: popper ? base + popper : nil, mov: mov ? base + mov : nil}
+    end
+
+    def self.find_csu_mov(win)
+      off = 0
+      while (call = win.index(CSU_CALL_BIN, off))
+        start = call - 9
+        return start if start >= 0 && [0x4c, 0x44].include?(win.getbyte(start)) && win.getbyte(start + 1) == 0x89
+
+        off = call + 1
+      end
+      nil
     end
 
     private
@@ -90,6 +119,10 @@ module AugureProfiler
       # needs the address, not just the existence.
       @elf.symbols.each do |sym|
         next unless sym.name.to_s.match?(/\Awin\z|win\z|flag\z/)
+        # an IMPORT is not a win HERE: the ret2csu shape imports its
+        # ret2win from the companion library; the symbol's value is 0
+        # and a built [qword win] payload would jump to NULL
+        next if sym.shndx.to_s == "UNDEF"
 
         facts.add("target_function", "true")
         facts.add("win_symbol", sym.name, sym.value.to_i)
@@ -189,15 +222,39 @@ module AugureProfiler
       hits.map { |(_order, type, addr)| [type, addr] }
     end
 
-    # Static binaries expose the __libc_csu_init universal gadgets under
-    # well-known symbols; their presence IS the gadget fact.
+    # Static binaries expose the __libc_csu_init universal gadgets; their
+    # presence IS the gadget fact. The two useful sequences sit at
+    # compiler-dependent offsets INSIDE the function (the entry/+0x40
+    # guess broke on the newer mov rdx,r15 flavor), so both are located
+    # by byte signature within the symbol's extent: the popper fact aims
+    # at the pop rbx (the chain entry, the leading add rsp,8 stays one
+    # slot earlier for layouts that need it), the mov block by its call
+    # signature. The pack teaches the arg mapping for its target.
     def emit_csu_gadgets(facts)
-      names = @elf.symbols.map(&:name).compact
-      return unless names.include?("__libc_csu_init")
-
       sym = @elf.symbols.find { |s| s.name == "__libc_csu_init" }
-      facts.add("gadget", "csu_popper", sym.value.to_i)
-      facts.add("gadget", "csu_mov", sym.value.to_i + 0x40)
+      return unless sym
+
+      base = sym.value.to_i
+      extent = sym.size.to_i
+      extent = 0x100 if extent <= 0
+      section = executable_sections.find do |s|
+        s.addr.to_i <= base && base < s.addr.to_i + s.size.to_i
+      end
+      return unless section
+
+      window = bytes_slice(section, base - section.addr.to_i)
+      return if window.nil? || window.empty?
+
+      addrs = self.class.csu_gadget_addrs(window, base, extent)
+      facts.add("gadget", "csu_popper", addrs[:popper]) if addrs[:popper]
+      facts.add("gadget", "csu_mov", addrs[:mov]) if addrs[:mov]
+    end
+
+    def bytes_slice(section, from)
+      bytes = section_bytes(section)
+      return nil if bytes.nil?
+
+      bytes[from, bytes.size - from] || []
     end
   end
 end
