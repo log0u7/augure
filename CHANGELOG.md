@@ -16,9 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The ret2csu_v2 pack's build layout now teaches the WIN call measured
   end to end on the corpus binary: the csu pair populates rsi/rdx (the
   newer gcc flavor truncates edi, rdi never rides the csu), the mov
-  block's mandatory call lands on _fini through the .dynamic DT_FINI
-  cell (a no-op call preserving every argument register), the
-  seven-slot junk slide absorbs the loop epilogue, then pop_rdi
+  block's mandatory call lands on the `fini` stub through the .dynamic
+  DT_FINI cell (a no-op call preserving every argument register), the
+  seven-slot junk slide absorbs the loop epilogue, then `pop_rdi`
   carries the full 64-bit first argument. The canonical puts leak
   stays documented as the reference variant.
 - Profiler: `pop rsi; pop r15; ret` joins the gadget vocabulary (the
