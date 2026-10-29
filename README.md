@@ -14,6 +14,7 @@
 [![Gem Version](https://img.shields.io/gem/v/augure)](https://rubygems.org/gems/augure)
 [![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.4-ruby.svg)](https://www.ruby-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Datalog](https://img.shields.io/badge/Datalog-333333.svg)](packs/)
 
 Every exploitation framework answers *"how do I run this technique?"*.
 **Augure answers the question nobody automates: *"which technique should run,
