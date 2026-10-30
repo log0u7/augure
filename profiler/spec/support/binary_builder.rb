@@ -62,6 +62,7 @@ module ProfilerBinaryBuilder
     _o, e, s = Open3.capture3("gcc", lib_src, "-shared", "-fPIC", "-o", lib)
     raise "lib build failed: #{e}" unless s.success?
 
+    @last_built_lib = lib
     src = File.join(dir, "importer.c")
     # the volatile global keeps the relocation alive (the compiler
     # cannot fold it away); the function is never called
@@ -76,6 +77,53 @@ module ProfilerBinaryBuilder
     raise "build failed: #{e}" unless s.success?
 
     bin
+  end
+
+  # The companion-library shape: a .so that IMPORTS the win function
+  # (its PLT stub carries the win name at a stub address). The win
+  # symbol heuristic must not mistake the stub for a callable target:
+  # a [qword win] payload pointing at a PLT stub jumps into the
+  # resolver, not at the win.
+  def win_importer_lib(dir = Dir.mktmpdir("augure_winlib"))
+    src = File.join(dir, "libpwn.c")
+    File.write(src, <<~C)
+      #include <unistd.h>
+      extern void ret2win(void);
+      __attribute__((noinline)) void pwnme(void) {
+          char small[8];
+          read(0, small, 64);
+          ret2win();
+      }
+    C
+    lib = File.join(dir, "libpwn.so")
+    # -fcf-protection: the .plt.sec layout (CFI) is where metasm
+    # materializes the stub as a defined FUNC symbol in .dynsym, the
+    # emporium companion libraries' shape
+    _o, e, s = Open3.capture3("gcc", src, "-shared", "-fPIC", "-o", lib,
+      "-fno-stack-protector", "-O0", "-fcf-protection=full")
+    raise "lib build failed: #{e}" unless s.success?
+
+    lib
+  end
+
+  # A shared object that DEFINES the win function: its symbol address
+  # is module-relative (ET_DYN), the merged fact base must not carry
+  # an address the runtime never maps at that value.
+  def win_definer_lib(dir = Dir.mktmpdir("augure_wdeflib"))
+    src = File.join(dir, "libwin.c")
+    File.write(src, <<~C)
+      #include <unistd.h>
+      __attribute__((noinline)) void ret2win(void) {
+          char small[8];
+          read(0, small, 16);
+      }
+    C
+    lib = File.join(dir, "libwin2.so")
+    _o, e, s = Open3.capture3("gcc", src, "-shared", "-fPIC", "-o", lib,
+      "-fno-stack-protector", "-O0")
+    raise "lib build failed: #{e}" unless s.success?
+
+    lib
   end
 
   # A sized copy whose length is an immediate too small to reach the
