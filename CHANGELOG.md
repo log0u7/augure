@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-30
+
+- The profiler emits the vuln facts the binary itself carries: the
+  static frame read is the evidence, so an unsafe call site feeding an
+  rbp-frame buffer becomes `vuln("sof")` with `vuln_function` and
+  `sink` facts, and a printf-family format argument living on the
+  stack becomes `vuln("fmtstr")` + `fmtstr_read`. The operator's
+  suggest stays for the knowledge no ELF can show (a lib-side overflow,
+  a heap class, a filter).
+- The sized-copy family (read, fgets, memcpy, memmove, strncpy) gets a
+  boundedness guard: when the length argument is an immediate at most
+  as large as the room between the buffer and the return slot, the
+  call is a bounded copy, not the overflow - the scan moves on. The
+  length register is per-sink (rdx, rsi for fgets). Sites without an
+  rbp-frame buffer (a global, a pointer arg) no longer stop the scan:
+  a later site may carry the overflow.
+- augure-profiler 0.0.3.
 ## [0.2.0] - 2026-10-29
 
 - The callme technique pack: three consecutive PLT calls with the
