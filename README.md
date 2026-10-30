@@ -53,8 +53,8 @@ augure analyze examples/ret2win.facts      # your first decision
 ```
 
 (The `examples/` ship in the gem; in a repo checkout the same paths work
-from the repo root. Not published yet? The sibling lictor checkout
-resolves augure by path - its Gemfile says so.)
+from the repo root. augure-profiler installs the same way and turns a
+real binary into the facts file.)
 
 Profile a real binary into facts, then decide on them:
 
