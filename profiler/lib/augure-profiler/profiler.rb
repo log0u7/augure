@@ -47,7 +47,30 @@ module AugureProfiler
       emit_checksec(facts)
       emit_symbols(facts)
       emit_gadgets(facts)
+      emit_vuln_facts(facts)
       facts
+    end
+
+    # The vuln facts the binary itself carries, so the operator's
+    # suggest stays for the knowledge NO ELF can show (a lib-side
+    # overflow, a heap class, a filter). The static frame read is the
+    # evidence: an unsafe call site feeding an rbp-frame buffer whose
+    # room the copy can reach - the sized family only when the length
+    # is not a bounded immediate. The fmtstr class: the printf-family
+    # format argument living on the stack.
+    def emit_vuln_facts(facts)
+      static = StaticOffset.offset(@path)
+      if static
+        facts.add("vuln", "sof")
+        facts.add("vuln_function", static[:function]) if static[:function] && !static[:function].empty?
+        facts.add("sink", static[:sink]) if static[:sink]
+      end
+
+      sink = StaticOffset.stack_format_sink(@path)
+      return unless sink
+
+      facts.add("vuln", "fmtstr")
+      facts.add("fmtstr_read", "true")
     end
 
     # the csu byte signatures, both known compiler flavors: the popper

@@ -9,7 +9,19 @@ module AugureProfiler
   # setup: offset = displacement + saved-rbp + return slot. The debugger
   # stays as the verifier, not the measurer.
   module StaticOffset
-    UNSAFE_CALLS = %w[strcpy gets scanf sprintf read readline strcat].freeze
+    # The unbounded family: no length argument exists, the copy runs to
+    # the NUL (or the newline). Any call site feeding it a stack buffer
+    # is the overflow, no further question asked.
+    UNSAFE_CALLS = %w[strcpy gets scanf sprintf readline strcat].freeze
+    # The sized family: the length rides in an argument (rdx on x64).
+    # When that argument is an immediate at most as large as the room
+    # between the buffer and the return slot, the copy cannot reach it:
+    # a bounded call, not the overflow - the scan moves on. A register
+    # (the read's count, the ret2plt memcpy) is unbounded by definition.
+    BOUNDED_CALLS = %w[read fgets fread memcpy memmove strncpy].freeze
+    # The variadic format users: the format argument is the attacker's
+    # bytes only when it comes from a stack buffer.
+    PRINTF_LIKE = %w[printf fprintf].freeze
 
     module_function
 
@@ -24,12 +36,12 @@ module AugureProfiler
 
     # Returns {offset:, sink:, function:} or nil when no unsafe call site
     # carries a readable rbp-frame buffer.
-    def offset(path)
+    def offset(path, calls: UNSAFE_CALLS + BOUNDED_CALLS)
       elf = Metasm::ELF.decode_file(path)
       arch = (elf.header.e_class.to_s == "64") ? :x64 : :x86
       @path = path
       stubs = plt_stubs(elf, arch)
-      unsafe = stubs.slice(*UNSAFE_CALLS)
+      unsafe = stubs.slice(*calls)
       return nil if unsafe.empty?
 
       @unsafe_addrs = unsafe.invert
@@ -39,7 +51,9 @@ module AugureProfiler
       bytes = data.bytes
       # The CHEAP scan first: a linear e8 rel32 walk nets every call to
       # an unsafe stub - the full .text disassembly (minutes on a 1MB
-      # text) is only needed if this finds nothing.
+      # text) is only needed if this finds nothing. Sites without an
+      # rbp-frame buffer (a global, a pointer arg) no longer stop the
+      # scan: a later site may carry the overflow.
       call_site = nil
       sink = nil
       bytes.each_index do |i|
@@ -48,7 +62,14 @@ module AugureProfiler
         target = text.addr + i + 5 + bytes[(i + 1)..(i + 4)].pack("C*").unpack1("l<")
         next unless (name = @unsafe_addrs[target])
 
-        call_site = text.addr + i
+        site = text.addr + i
+        frame = frame_bytes(data, site - text.addr, arch)
+        next if frame.nil? || !frame[:offset]&.positive?
+
+        next if BOUNDED_CALLS.include?(name) &&
+          size_imm_cannot_reach?(bytes, site - text.addr, frame[:offset], arch, name)
+
+        call_site = site
         sink = name
         break
       end
@@ -110,6 +131,100 @@ module AugureProfiler
         return {offset: saved - disp, sink: nil}
       end
       nil
+    end
+
+    # The sized family's length argument rides rdx (x64): an immediate
+    # at most as large as the room between the buffer and the return
+    # slot means the copy cannot reach it. x86 passes the length on the
+    # stack, no immediate to read: treated as unbounded (the
+    # conservative direction: a false vuln beats a missed one).
+    def size_imm_cannot_reach?(bytes, call_off, room, arch, sink)
+      return false unless arch == :x64
+
+      # the length argument's register: rdx for the memcpy family, rsi
+      # for fgets (buf, size, stream)
+      opcodes = (sink == "fgets") ?
+        [[0xbe], [0x48, 0xc7, 0xc6], [0x49, 0xc7, 0xc6]] : # mov esi/rsi, imm32
+        [[0xba], [0x48, 0xc7, 0xc2], [0x49, 0xc7, 0xc2]]   # mov edx/rdx, imm32
+
+      start = [call_off - 16, 0].max
+      (start..(call_off - 5)).each do |j|
+        opcodes.each do |ops|
+          if ops.size == 1
+            return true if bytes[j] == ops[0] && (imm = imm32(bytes, j + 1)) && imm <= room
+          elsif j >= ops.size - 1
+            opcode_ok = (1...(ops.size)).all? { |k| bytes[j - k] == ops[ops.size - 1 - k] }
+            return true if opcode_ok && bytes[j] == ops.last && (imm = imm32(bytes, j + 1)) && imm <= room
+          end
+        end
+      end
+      false
+    end
+
+    def imm32(bytes, off)
+      return nil if off.negative? || off + 4 > bytes.size
+
+      bytes[off, 4].pack("C*").unpack1("L<")
+    end
+
+    # The printf-family sites whose format argument is a STACK buffer:
+    # lea reg,[rbp-disp] feeding rdi (directly, 48 8d 7d d8, or through
+    # a register move, 48 8d 45 d8 then 48 89 c7) means the format is
+    # the attacker's bytes - the fmtstr class. A .rodata format rides
+    # an immediate (mov edi, imm32): not a vuln. x86 passes args on the
+    # stack, no lea-into-rdi idiom to read: nil (an honest miss).
+    def stack_format_sink(path)
+      elf = Metasm::ELF.decode_file(path)
+      arch = (elf.header.e_class.to_s == "64") ? :x64 : :x86
+      return nil unless arch == :x64
+
+      @path = path # plt_stubs reads the section bytes through @path
+
+      stubs = plt_stubs(elf, arch)
+      like = stubs.slice(*PRINTF_LIKE)
+      return nil if like.empty?
+
+      like_addrs = like.invert
+      text = elf.sections.find { |s| s.name == ".text" }
+      data = section_data(path, text)
+      bytes = data.bytes
+      bytes.each_index do |i|
+        next unless bytes[i] == 0xe8
+
+        target = text.addr + i + 5 + bytes[(i + 1)..(i + 4)].pack("C*").unpack1("l<")
+        next unless like_addrs[target]
+
+        return like_addrs[target] if stack_format_rdi?(bytes, i)
+      end
+      nil
+    rescue Metasm::ParseError, Metasm::InvalidExeFormat
+      nil
+    end
+
+    # a mini-modrm decode of the lea feeding the format argument: REX.W
+    # (48) + 8d + modrm(mod=01|10, rm=101=rbp) = lea reg,[rbp-disp8|32].
+    # reg=rdi (111) is the direct form; reg=rax (000) needs the
+    # immediate mov rdi, rax (48 89 c7) right after the lea. Only 0x48
+    # qualifies as REX: REX.B would turn rbp into r13.
+    def stack_format_rdi?(bytes, call_off)
+      start = [call_off - 24, 0].max
+      (start...(call_off - 3)).each do |j|
+        next unless bytes[j] == 0x48
+        next unless bytes[j + 1] == 0x8d
+
+        modrm = bytes[j + 2]
+        mod = modrm >> 6
+        next unless mod == 0b01 || mod == 0b10
+        next unless (modrm & 7) == 0b101
+
+        reg = (modrm >> 3) & 7
+        len = (mod == 0b01) ? 4 : 7
+        return true if reg == 0b111
+        next unless reg == 0b000
+
+        return true if bytes[j + len, 3] == [0x48, 0x89, 0xc7]
+      end
+      false
     end
 
     # The buffer displacement in the argument setup, then the frame math:

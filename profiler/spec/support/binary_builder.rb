@@ -78,6 +78,112 @@ module ProfilerBinaryBuilder
     bin
   end
 
+  # A sized copy whose length is an immediate too small to reach the
+  # return slot: bounded, not the overflow. -fno-builtin keeps memcpy a
+  # real call (the compiler would fold it away otherwise).
+  def bounded_memcpy(dir = Dir.mktmpdir("augure_memcpy"))
+    src = File.join(dir, "bounded.c")
+    File.write(src, <<~C)
+      #include <string.h>
+      int main(void) {
+          char src_buf[16] = "abcdefgh";
+          char dst[8];
+          memcpy(dst, src_buf, 4);
+          return dst[0];
+      }
+    C
+    bin = File.join(dir, "bounded")
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-no-pie", "-O0", "-fno-builtin")
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
+  # The ret2plt shape: the copy length rides in a register (the read's
+  # count), so no immediate bounds the copy: the overflow is real.
+  def unbounded_memcpy(dir = Dir.mktmpdir("augure_umemcpy"))
+    src = File.join(dir, "unbounded.c")
+    File.write(src, <<~C)
+      #include <string.h>
+      #include <unistd.h>
+      __attribute__((noinline)) int vuln_copy(const char *src, long n) {
+          char small[8];
+          memcpy(small, src, n);
+          return (int) n;
+      }
+      int main(void) {
+          char big[512];
+          ssize_t n = read(0, big, sizeof(big) - 1);
+          if (n < 16) return 1;
+          big[n] = 0;
+          return vuln_copy(big, n);
+      }
+    C
+    bin = File.join(dir, "unbounded")
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-no-pie", "-O0", "-fno-builtin")
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
+  # A sized stdin read whose immediate matches the buffer: bounded.
+  def bounded_read(dir = Dir.mktmpdir("augure_bread"))
+    src = File.join(dir, "bread.c")
+    File.write(src, <<~C)
+      #include <unistd.h>
+      int main(void) {
+          char buf[64];
+          ssize_t n = read(0, buf, sizeof(buf) - 1);
+          return (n > 0) ? buf[0] : 1;
+      }
+    C
+    bin = File.join(dir, "bread")
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-no-pie", "-O0", "-fno-builtin")
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
+  # printf with a constant format: the classic safe call. -fno-builtin
+  # keeps the call (gcc would fold printf("...") to puts otherwise).
+  def printf_constant(dir = Dir.mktmpdir("augure_pconst"))
+    src = File.join(dir, "pconst.c")
+    File.write(src, <<~C)
+      #include <stdio.h>
+      int main(void) {
+          printf("constant format\\n");
+          return 0;
+      }
+    C
+    bin = File.join(dir, "pconst")
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-no-pie", "-O0", "-fno-builtin")
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
+  # The fmtstr shape: the format argument is the attacker's buffer.
+  def printf_stack(dir = Dir.mktmpdir("augure_pstack"))
+    src = File.join(dir, "pstack.c")
+    File.write(src, <<~C)
+      #include <stdio.h>
+      #include <unistd.h>
+      int main(void) {
+          char buf[64];
+          ssize_t n = read(0, buf, sizeof(buf) - 1);
+          if (n < 4) return 1;
+          buf[n] = 0;
+          printf(buf);
+          return 0;
+      }
+    C
+    bin = File.join(dir, "pstack")
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-no-pie", "-O0", "-fno-builtin")
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
   def local_system(dir = Dir.mktmpdir("augure_local"))
     # a binary whose ONLY interesting symbol is a LOCAL function named
     # exactly `system`: the ret2plt trap - if the profiler emits
