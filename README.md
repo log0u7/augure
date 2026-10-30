@@ -11,10 +11,13 @@
 ---
 
 [![CI](https://github.com/log0u7/augure/actions/workflows/ci.yml/badge.svg)](https://github.com/log0u7/augure/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Ruby](https://img.shields.io/badge/Ruby-%3E%3D%203.4-CC342D?logo=ruby&logoColor=white)](https://www.ruby-lang.org/)
 [![Gem Version](https://img.shields.io/gem/v/augure)](https://rubygems.org/gems/augure)
-[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.4-ruby.svg)](https://www.ruby-lang.org/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Datalog](https://img.shields.io/badge/Datalog-333333.svg)](packs/)
+[![Metasm](https://img.shields.io/badge/Metasm-333333.svg)](https://metasm.cr0.org/)
+[![Z3](https://img.shields.io/badge/Z3-333333.svg)](https://github.com/Z3Prover/z3)
+[![MCP](https://img.shields.io/badge/MCP-333333.svg)](https://modelcontextprotocol.io)
 
 Every exploitation framework answers *"how do I run this technique?"*.
 **Augure answers the question nobody automates: *"which technique should run,
