@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rbp-frame buffer (a global, a pointer arg) no longer stop the scan:
   a later site may carry the overflow.
 - augure-profiler 0.0.3.
+
 ## [0.2.0] - 2026-10-29
 
 - The callme technique pack: three consecutive PLT calls with the
