@@ -139,13 +139,22 @@ module AugureProfiler
       # CTF heuristic: a local win/flag function = a callable target
       # (the ret2func family's target_function fact). The winning
       # symbol keeps its name AND its address - the payload builder
-      # needs the address, not just the existence.
+      # needs the address, not just the existence. The address is only
+      # usable when the module is ET_EXEC (non-PIE: the address is
+      # absolute): an ET_DYN module's symbol address is module-
+      # relative, and a companion library's win is not in the binary's
+      # address space - the merged fact base must not carry an address
+      # the runtime never maps (the emporium libret2csu defines its
+      # own ret2win at 0x2515, module-relative).
+      exec = @elf.header.type == "EXEC"
       @elf.symbols.each do |sym|
         next unless sym.name.to_s.match?(/\Awin\z|win\z|flag\z/)
         # an IMPORT is not a win HERE: the ret2csu shape imports its
         # ret2win from the companion library; the symbol's value is 0
         # and a built [qword win] payload would jump to NULL
         next if sym.shndx.to_s == "UNDEF"
+
+        next unless exec
 
         facts.add("target_function", "true")
         facts.add("win_symbol", sym.name, sym.value.to_i)

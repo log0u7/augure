@@ -43,4 +43,18 @@ RSpec.describe "the profiler's own vuln facts (the knowledge the binary carries)
     facts = AugureProfiler::Profiler.new(bin).facts.to_s
     expect(facts).not_to match(/vuln\("sof"\)/)
   end
+
+  it "does not mistake a PLT stub for a win symbol in a companion library" do
+    lib = ProfilerBinaryBuilder.win_importer_lib
+    facts = AugureProfiler::Profiler.new(lib).facts.to_s
+    expect(facts).to match(/plt_addr\("ret2win"/)
+    expect(facts).not_to match(/win_symbol\("ret2win"/)
+  end
+
+  it "does not emit a module-relative win address from a shared object" do
+    lib = ProfilerBinaryBuilder.win_definer_lib
+    facts = AugureProfiler::Profiler.new(lib).facts.to_s
+    expect(facts).not_to match(/win_symbol\("ret2win"/)
+    expect(facts).not_to match(/target_function\("true"\)/)
+  end
 end
