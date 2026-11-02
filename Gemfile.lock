@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    augure (0.3.0)
+    augure (0.3.1)
 
 PATH
   remote: mcp_server
