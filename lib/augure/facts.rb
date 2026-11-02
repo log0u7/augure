@@ -125,6 +125,15 @@ module Augure
 
         raise MalformedFact, "#{name}: fact atoms may not contain quotes, backslashes, parens or newlines"
       end
+      # the empty atom: a fact like allocator("") carries no observation -
+      # it parses, then every rule of the predicate silently never fires
+      # (measured: the suggest step's empty allocator tilted a decision).
+      # Loud failure instead of silent void.
+      args.each do |arg|
+        next unless arg.is_a?(String) && arg.empty?
+
+        raise MalformedFact, "#{name}: fact atoms may not be empty strings"
+      end
       (@rels[name] ||= []) << args
       self
     end
@@ -163,7 +172,13 @@ module Augure
         if arg.match?(/\A-?\d+\z/)
           arg.to_i
         elsif arg.match?(/\A"[^"\\()]*"\z/)
-          arg[1..-2]
+          inner = arg[1..-2]
+          if inner.empty?
+            raise MalformedFact,
+              "line #{lineno}: #{name} arg #{i + 1} may not be an empty string"
+          end
+
+          inner
         else
           raise MalformedFact,
             "line #{lineno}: #{name} arg #{i + 1} is not a quoted string atom or integer"

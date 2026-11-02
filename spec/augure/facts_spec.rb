@@ -77,6 +77,23 @@ RSpec.describe Augure::Facts do
         .to raise_error(Augure::MalformedFact, /string atom/)
     end
 
+    it "rejects empty string atoms at parse time with the line number" do
+      # the empty atom: allocator("") parses, then every rule of the
+      # predicate silently never fires (measured: the suggest step's
+      # empty allocator tilted a decision). Loud failure instead.
+      expect { described_class.parse("allocator(\"\").\n") }
+        .to raise_error(Augure::MalformedFact, /line 1.*empty/)
+      expect { described_class.parse("gadget(\"\", 4198400).\n") }
+        .to raise_error(Augure::MalformedFact, /line 1.*empty/)
+    end
+
+    it "rejects empty string atoms at add time" do
+      expect { described_class.new.add("allocator", "") }
+        .to raise_error(Augure::MalformedFact, /empty/)
+      expect { described_class.new.add("gadget", "", 4_198_400) }
+        .to raise_error(Augure::MalformedFact, /empty/)
+    end
+
     it "accepts the cve fact (the CVE/KEV bridge the agent proposes)" do
       f = described_class.parse("cve(\"CVE-2024-1234\").\n")
       expect(f.rel("cve")).to eq([["CVE-2024-1234"]])

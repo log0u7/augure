@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The fact-atom grammar rejects empty string atoms (`allocator("")`): the empty
+  atom parsed, carried no observation, and every rule of the predicate silently
+  never fired (measured: the suggest step's empty allocator tilted a decision).
+  Loud `MalformedFact` with the line number at parse and at `add`.
+
 ## [0.3.0] - 2026-10-30
 
 - The profiler emits the vuln facts the binary itself carries: the
