@@ -8,6 +8,17 @@ rules:
     conditions:
       - [fact, vuln, uaf]
       - [fact, allocator, tcache]
+  # Sibling provenance for the modern-glibc shape (mr5 uaf_heap-002):
+  # glibc 2.32+ mangles tcache next pointers (PROTECT_PTR, safe-linking)
+  # and the win rides a heap-resident function pointer - the overwrite
+  # goes through the dangling pointer, not a poisoned fd.
+  - id: app_uaf_tcache_safelink
+    head: [applicable, uaf_tcache]
+    conditions:
+      - [fact, vuln, uaf]
+      - [fact, allocator, tcache]
+      - [cmp, glibc_minor, ge, 32]
+      - [fact, function_pointer_on_heap, true]
 
 kb:
   - id: uaf_tcache_001

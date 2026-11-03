@@ -60,7 +60,7 @@ plan:       ret2plt
 # (selected is a seeded Thompson draw: same facts + same --seed = same
 #  selection, always. Unseeded, the draw explores the ranking.)
   ret2plt <- app_ret2plt (vuln=sof, nx=true, pie=false, plt=system)
-  rop     <- app_rop (vuln=sof, nx=true, enough_gadgets=true)
+  rop     <- app_rop (vuln=sof, nx=true, enough_gadgets=true, chain terminus)
 ```
 
 Augure picked `ret2plt` - the technique human operators routinely skip in

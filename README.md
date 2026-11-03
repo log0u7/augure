@@ -72,7 +72,7 @@ applicable: ret2plt, rop
 selected:   ret2plt
 plan:       ret2plt
   ret2plt <- app_ret2plt (vuln=sof, nx=true, pie=false, plt=system)
-  rop <- app_rop (vuln=sof, nx=true, enough_gadgets=true)
+  rop <- app_rop (vuln=sof, nx=true, enough_gadgets=true, chain terminus)
 ```
 
 Or the machine-readable form:

@@ -67,11 +67,19 @@ RSpec.describe Augure::Engine do
       expect(applicable(both).count("ret2libc")).to eq(1)
     end
 
-    it "fires rop with register or write control under NX" do
-      reg = "vuln(\"sof\").\nnx(\"true\").\ngadget(\"pop_rdi_ret\", 1).\n"
+    it "fires rop with register or write control under NX, given a chain terminus" do
+      # rop is the generic execve chain: a lone pop gadget chains PLT
+      # calls at best (ret2plt/ret2libc territory), so the rule demands
+      # a terminus - syscall gadget, write primitive, win or PLT target.
+      reg = "vuln(\"sof\").\nnx(\"true\").\ngadget(\"pop_rdi_ret\", 1).\n" \
+            "plt(\"system\").\n"
       write = "vuln(\"sof\").\nnx(\"true\").\ngadget(\"mov_deref_write\", 1).\n"
       expect(applicable(reg)).to eq(["rop"])
       expect(applicable(write)).to eq(["rop"])
+
+      # no terminus: the pop gadget alone is not a rop proposal
+      bare = "vuln(\"sof\").\nnx(\"true\").\ngadget(\"pop_rdi_ret\", 1).\n"
+      expect(applicable(bare)).to be_empty
     end
 
     it "fires srop on sigreturn frame + syscall gadget" do
@@ -82,8 +90,8 @@ RSpec.describe Augure::Engine do
     it "fires ret2plt_leak only with NX+PIE+puts+reg control" do
       f = "vuln(\"sof\").\nnx(\"true\").\npie(\"true\").\nplt(\"puts\").\n" \
           "gadget(\"pop_rdi_ret\", 1).\n"
-      # rop also fires here (Python-identical: NX + gadget supply).
-      expect(applicable(f)).to eq(%w[rop ret2plt_leak])
+      # rop stands down: the puts@plt leak has no execve terminus here.
+      expect(applicable(f)).to eq(["ret2plt_leak"])
     end
 
     it "fires fmtstr_write on format-string vuln regardless of NX" do
@@ -105,8 +113,9 @@ RSpec.describe Augure::Engine do
     end
 
     it "applies defaults: NX true, PIE true, canary false when absent" do
-      # No nx fact -> default true -> shellcode impossible, rop possible.
-      f = "vuln(\"sof\").\ngadget(\"pop_rdi_ret\", 1).\n"
+      # No nx fact -> default true -> shellcode impossible, rop possible
+      # (system@plt is the chain terminus).
+      f = "vuln(\"sof\").\ngadget(\"pop_rdi_ret\", 1).\nplt(\"system\").\n"
       expect(applicable(f)).to eq(["rop"])
       # canary absent -> default false, but NX default true -> still no shellcode.
     end

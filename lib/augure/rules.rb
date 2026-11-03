@@ -80,6 +80,39 @@ module Augure
           source: "stack pivot gadget (xchg/mov rsp)" do |c|
           c.match "gadget", 0, "xchg"
         end
+        # The sigreturn pivot (mov rax, 15; syscall) is both the frame
+        # mechanism and a syscall instruction: one gadget, two families
+        # (the mr5 srop-001 shape - the profiler's sigreturn hunt).
+        b.rule :fam_sigreturn_frame, %w[sigreturn_frame true],
+          source: "sigreturn gadget present: the forged rt_sigreturn " \
+                  "frame is craftable (mr5 srop-001 ORACLE)" do |c|
+          c.match "gadget", 0, "sigreturn"
+        end
+        b.rule :fam_syscall_from_sigreturn, %w[has_syscall_gadget true],
+          source: "the sigreturn pivot carries the syscall instruction" do |c|
+          c.match "gadget", 0, "sigreturn"
+        end
+        # A ROP chain needs a terminus: a syscall to aim, an arbitrary
+        # write, a win function, or a PLT destination worth calling. A
+        # lone pop gadget chains PLT calls at best - that is the
+        # ret2plt/ret2libc territory, not a generic execve chain.
+        b.rule :fam_chain_target_syscall, %w[has_chain_target true],
+          source: "syscall or int80 gadget: the chain aims execve" do |c|
+          c.match "gadget", 0, "syscall|int80"
+        end
+        b.rule :fam_chain_target_write, %w[has_chain_target true],
+          source: "a write primitive aims the chain (GOT, .bss)" do |c|
+          c.fact "has_write_primitive", "true"
+        end
+        b.rule :fam_chain_target_win, %w[has_chain_target true],
+          source: "a win function terminates the chain" do |c|
+          c.fact "target_function", "true"
+        end
+        b.rule :fam_chain_target_plt, %w[has_chain_target true],
+          source: "a PLT destination (system, print_file, callme_*, " \
+                  "ret2win, foothold) terminates the chain" do |c|
+          c.match "plt", 0, "system|print_file|callme_|ret2win|foothold"
+        end
         b.rule :enough_from_reg, %w[enough_gadgets true],
           source: "register control alone sustains a ROP chain" do |c|
           c.fact "has_reg_control", "true"
@@ -106,6 +139,17 @@ module Augure
           c.fact "pie", "false"
           c.fact "target_function", "true"
         end
+        # Sibling provenance: with the canary on, the straight smash dies
+        # on the cookie - the flow leaks the canary first and restores it
+        # in the strike round (mr5 ret2func-002 ORACLE).
+        b.rule :app_ret2func_canary, ["applicable", "ret2func"],
+          source: "canary on: the win ride must leak and restore the " \
+                  "stack cookie first (mr5 ret2func-002 ORACLE)" do |c|
+          c.fact "vuln", "sof"
+          c.fact "pie", "false"
+          c.fact "target_function", "true"
+          c.fact "canary", "true"
+        end
         b.rule :app_ret2plt, ["applicable", "ret2plt"],
           source: "system@plt imported: call it directly, no leak" do |c|
           c.fact "vuln", "sof"
@@ -119,6 +163,24 @@ module Augure
           c.fact "plt", "__libc_start_main"
           c.not_fact "seccomp", "true"
         end
+        # The leak-first shape (mr5 ret2libc-001 ORACLE): PIE on, partial
+        # RELRO, puts@plt and register control - the chain leaks GOT[puts]
+        # through puts@plt, derives the libc base and strikes system(). On
+        # this shape the leak exists to serve the libc strike, so the
+        # ret2plt_leak discipline (the leak AS the plan, full-RELRO pure-
+        # PLT shape) stands down - see app_ret2plt_leak.
+        b.rule :app_ret2libc_leak_first, ["applicable", "ret2libc"],
+          source: "PIE + partial RELRO + puts@plt + register control: " \
+                  "leak GOT via puts@plt, compute the base, strike " \
+                  "system (mr5 ret2libc-001 ORACLE)" do |c|
+          c.fact "vuln", "sof"
+          c.fact "nx", "true"
+          c.fact "pie", "true"
+          c.fact "relro", "partial"
+          c.fact "plt", "puts"
+          c.fact "has_reg_control", "true"
+          c.not_fact "seccomp", "true"
+        end
         b.rule :app_ret2libc_libc, ["applicable", "ret2libc"],
           source: "libc known/version pinned: offsets computable" do |c|
           c.fact "vuln", "sof"
@@ -126,10 +188,13 @@ module Augure
           c.not_fact "seccomp", "true"
         end
         b.rule :app_rop, ["applicable", "rop"],
-          source: "NX on with gadget supply: chain primitives" do |c|
+          source: "NX on with gadget supply AND a chain terminus " \
+                  "(syscall gadget, write primitive, win function or " \
+                  "PLT destination): chain primitives" do |c|
           c.fact "vuln", "sof"
           c.fact "nx", "true"
           c.fact "enough_gadgets", "true"
+          c.fact "has_chain_target", "true"
           c.not_fact "seccomp", "true"
         end
         b.rule :app_srop, ["applicable", "srop"],
@@ -141,12 +206,18 @@ module Augure
           c.not_fact "seccomp", "true"
         end
         b.rule :app_ret2plt_leak, ["applicable", "ret2plt_leak"],
-          source: "PIE on: leak via puts@plt with register control" do |c|
+          source: "PIE on, no partial-RELRO libc hop: leak via puts@plt " \
+                  "with register control - the pure-PLT discipline " \
+                  "(mr5 ret2plt-002 ORACLE: full RELRO, leak then write)" do |c|
           c.fact "vuln", "sof"
           c.fact "nx", "true"
           c.fact "pie", "true"
           c.fact "plt", "puts"
           c.fact "has_reg_control", "true"
+          # Under partial RELRO with libc one hop away the leak serves the
+          # leak-first ret2libc (app_ret2libc_leak_first); the leak AS the
+          # plan is the full-RELRO pure-PLT shape.
+          c.not_fact "relro", "partial"
         end
 
         # -- applicable: format string -----------------------------------
