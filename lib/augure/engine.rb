@@ -91,6 +91,23 @@ module Augure
         tuples_for(rels, cond[1])
           .select { |t| t == [cond[2]] }
           .map { |t| [cond[1], t[0]] }
+      when :corroborated
+        # A suggested-only fact cannot satisfy a routing precondition
+        # alone: if the fact is measured it stands by itself, otherwise
+        # one of the corroborating facts (the `with:` list) must be
+        # present AND measured in the fact store.
+        rel = cond[1]
+        val = cond[2]
+        corroborations = cond[3]
+        primary = tuples_for(rels, rel).select { |t| t == [val] }
+        if primary.any? { |t| @facts.measured?(rel, *t) }
+          primary.map { |t| [rel, *t] }
+        else
+          corroborated = corroborations.any? do |(c_rel, c_val)|
+            tuples_for(rels, c_rel).any? { |t| t == [c_val] && @facts.measured?(c_rel, *t) }
+          end
+          corroborated ? primary.map { |t| [rel, *t] } : []
+        end
       when :not_fact
         present = tuples_for(rels, cond[1]).any? { |t| t == [cond[2]] }
         present ? [] : [[]]
@@ -119,7 +136,12 @@ module Augure
         key = [r, t[0]]
         entries = provs[key] ||= []
         firings.each do |(combo, rule)|
-          entries << {rule: rule.id, origin: rule.origin, evidence: combo.reject(&:empty?)}
+          evidence = combo.reject(&:empty?)
+          # P2 provenance: the fact-source class (measured vs suggested)
+          # of every evidence fact, so the audit trail can tell a
+          # profiler-backed precondition from an LLM-suggested one.
+          evidence_sources = evidence.flat_map { |item| @facts.source_of(*item).map(&:to_s) }.uniq
+          entries << {rule: rule.id, origin: rule.origin, evidence: evidence, evidence_sources: evidence_sources}
         end
       end
       Result.new(derived, provs)

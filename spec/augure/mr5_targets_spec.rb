@@ -310,4 +310,90 @@ RSpec.describe "MR5 lab targets" do
       expect(engine.derived("has_syscall_gadget")).to eq([["true"]])
     end
   end
+
+  # -- P3: corroboration preconditions (measured brainforge failures) --
+  # The measured trails: a bogus suggested vuln("fmtstr") alone flipped a
+  # correct srop/ret2libc routing; an 802-line suggestion flood flooded the
+  # fact base. Suggested-only vuln facts must not decide routing on their
+  # own: they need measured corroboration.
+  describe "P3 corroboration preconditions" do
+    let(:srop_profiler_facts) do
+      # the real srop-001 measured stream: no fmtstr_read, no printf -
+      # the profiler facts alone route srop correctly
+      <<~FACTS
+        nx("true").
+        pie("false").
+        canary("false").
+        relro("partial").
+        plt("__libc_start_main").
+        plt("puts").
+        gadget("sigreturn", 4198774).
+        gadget("ret_align", 4198422).
+        vuln("sof").
+        vuln_function("vuln_copy").
+        leaked_address("gadget", 4198774).
+      FACTS
+    end
+
+    it "(a) profiler-only facts still route srop first" do
+      decision = Augure::Pipeline.analyze(facts: srop_profiler_facts, seed: 1, packs: packs, plan: false)
+      expect(decision[:ranking].first).to eq("srop")
+    end
+
+    it '(b) a bogus suggested vuln("fmtstr") does not flip routing to fmtstr_write' do
+      decision = Augure::Pipeline.analyze(
+        facts: srop_profiler_facts, suggest: "vuln(\"fmtstr\").\n",
+        seed: 1, packs: packs, plan: false
+      )
+      expect(decision[:applicable]).not_to include("fmtstr_write", "fmtstr_leak")
+      expect(decision[:ranking].first).to eq("srop")
+    end
+
+    it "(b+) the same suggested vuln fires once fmtstr_read is measured" do
+      fmtstr_shape = srop_profiler_facts.sub(
+        "gadget(\"sigreturn\", 4198774).\n", "gadget(\"sigreturn\", 4198774).\nfmtstr_read(\"true\").\n"
+      )
+      decision = Augure::Pipeline.analyze(
+        facts: fmtstr_shape, suggest: "vuln(\"fmtstr\").\n",
+        seed: 1, packs: packs, plan: false
+      )
+      expect(decision[:applicable]).to include("fmtstr_write")
+    end
+
+    it "(c) the 802-line flood decides exactly like the clean 3-fact suggest" do
+      uaf_facts = <<~FACTS
+        nx("true").
+        pie("false").
+        canary("false").
+        relro("partial").
+        plt("free").
+        plt("malloc").
+        plt("__libc_start_main").
+        plt("puts").
+        plt("strtoull").
+        gadget("ret_align", 4198422).
+        gadget("ret_align", 4199620).
+        target_function("true").
+        win_symbol("win", 4198902).
+      FACTS
+      clean = Augure::Pipeline.analyze(
+        facts: uaf_facts, suggest: "vuln(\"uaf\").\nallocator(\"tcache\").\nglibc_minor(36).\n",
+        seed: 1, packs: packs, plan: false
+      )
+      flood = Augure::Pipeline.analyze(
+        facts: uaf_facts,
+        suggest: "vuln(\"uaf\").\nvuln(\"fmtstr\").\nallocator(\"tcache\").\nglibc_minor(36).\n" +
+                 ("vuln(\"fmtstr\").\n" * 798),
+        seed: 1, packs: packs, plan: false
+      )
+      expect(flood[:suggest][:accepted]).to eq(4)
+      expect(flood[:suggest][:dropped]).to eq(798)
+      expect(flood[:applicable]).to eq(clean[:applicable])
+      expect(flood[:ranking]).to eq(clean[:ranking])
+      expect(flood[:selected]).to eq(clean[:selected])
+      # the bogus vuln("fmtstr") rides in the first emissions: the gate
+      # must keep fmtstr_* dead even when the noise would have carried it
+      expect(flood[:applicable]).not_to include("fmtstr_write", "fmtstr_leak")
+    end
+  end
 end
