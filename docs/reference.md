@@ -93,14 +93,16 @@ absent `canary` = `"false"`.
 | `app_ret2func` | `ret2func` | sof, PIE off, target function present |
 | `app_ret2plt` | `ret2plt` | sof, NX on, PIE off, `system` imported |
 | `app_ret2libc_plt` | `ret2libc` | sof, `__libc_start_main` imported, NOT seccomp |
+| `app_ret2libc_leak_first` | `ret2libc` | sof, NX on, PIE on, partial RELRO, `puts`, reg control, NOT seccomp |
 | `app_ret2libc_libc` | `ret2libc` | sof, libc present, NOT seccomp |
-| `app_rop` | `rop` | sof, NX on, gadget supply (pop or mov-store), NOT seccomp |
+| `app_rop` | `rop` | sof, NX on, gadget supply, chain terminus (syscall gadget, write primitive, win or PLT destination), NOT seccomp |
 | `app_srop` | `srop` | sof, sigreturn frame, syscall gadget, NOT seccomp |
-| `app_ret2plt_leak` | `ret2plt_leak` | sof, NX on, PIE on, `puts`, reg control |
+| `app_ret2plt_leak` | `ret2plt_leak` | sof, NX on, PIE on, `puts`, reg control, NOT partial RELRO (the libc hop owns that shape) |
 | `app_fmtstr_write` | `fmtstr_write` | format-string vuln (NX-independent) |
 | `app_fmtstr_leak_read` | `fmtstr_leak` | fmtstr + read primitive |
 | `app_fmtstr_leak_pie` | `fmtstr_leak` | fmtstr + PIE on |
 | `app_fmtstr_leak_canary` | `fmtstr_leak` | fmtstr + canary on |
+| `app_ret2func_canary` | `ret2func` | sibling of `app_ret2func`: canary on - the flow leaks and restores the cookie |
 | `app_ret2dlresolve` | `ret2dlresolve` | sof, NX on, PIE off, lazy binding, writable reloc |
 | `app_ret2csu` | `ret2csu` | sof, NX on, csu gadget family |
 | `app_stack_pivot` | `stack_pivot` | sof, NX on, limited stack, pivot gadget |
@@ -119,7 +121,10 @@ condition passes when the fact is absent.)
 
 Derived relations: `vuln` (from hints), `has_reg_control`,
 `has_write_primitive`, `has_syscall_gadget`, `has_csu_gadget`,
-`has_pivot_gadget`, `enough_gadgets`.
+`has_pivot_gadget`, `enough_gadgets`, `sigreturn_frame` and
+`has_syscall_gadget` also derive from a `sigreturn` gadget (the pivot
+carries the syscall), `has_chain_target` (the rop terminus: syscall
+gadget, write primitive, win function or PLT destination).
 
 ## CLI
 

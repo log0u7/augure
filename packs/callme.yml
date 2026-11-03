@@ -17,6 +17,21 @@ rules:
       - [match, gadget, 0, pop_rdi]
       - [match, gadget, 0, pop_rsi_r15]
       - [match, gadget, 0, pop_rdx]
+  # The mr5 callme-002 shape: the helpers are LOCAL functions (no PLT
+  # stubs) - the banner announces them and the pop3 gadget, and the
+  # announced addresses ride in on leaked_address facts. Each match
+  # condition must find its own tuple, so all three helpers must be
+  # announced before the rule fires.
+  - id: app_callme_banner
+    head: [applicable, callme]
+    conditions:
+      - [fact, vuln, sof]
+      - [fact, nx, true]
+      - [fact, pie, false]
+      - [match, leaked_address, 0, "^one$"]
+      - [match, leaked_address, 0, "^two$"]
+      - [match, leaked_address, 0, "^three$"]
+      - [match, gadget, 0, pop_rdi_rsi_rdx|pop3]
 
 kb:
   - id: callme_001

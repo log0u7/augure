@@ -9,6 +9,13 @@ rules:
       - [fact, pie, true]
       - [fact, vuln, sof]
       - [fact, canary, false]
+      # The partial overwrite is the NO-LEAK fallback: when a leak
+      # primitive or a libc anchor exists, the determined path (leak-
+      # first ret2libc, ret2plt_leak) dominates - the byte hop is for
+      # targets that announce nothing (mr5 ret2libc-001 runs).
+      - [not_fact, plt, puts]
+      - [not_fact, plt, __libc_start_main]
+      - [not_fact, libc_present, true]
 
 kb:
   - id: ret2partial_overwrite_001

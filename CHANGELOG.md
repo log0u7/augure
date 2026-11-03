@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- The MR5 lab technique classes, encoded as rules so the measured
+  2026-11-03 decision log routes them right (each rule cites the
+  target's ORACLE.md as provenance):
+  - `app_ret2libc_leak_first`: PIE + partial RELRO + `puts@plt` +
+    register control is the leak-first ret2libc (leak GOT[puts],
+    compute the base, strike `system`), not a bare leak discipline.
+  - `app_ret2func_canary`: sibling provenance for the canary-aware
+    win flow (leak and restore the cookie before the strike).
+  - `fam_sigreturn_frame` and `fam_syscall_from_sigreturn`: a
+    `sigreturn` gadget derives both the forged-frame capability and
+    the syscall instruction, so SROP fires without a hand-written
+    `sigreturn_frame` fact.
+  - `fam_chain_target_*` + a terminus condition on `app_rop`: a lone
+    pop gadget chains PLT calls at best - the generic execve chain
+    needs a syscall gadget, a write primitive, a win function or a
+    PLT destination.
+  - `app_ret2plt_leak` stands down under partial RELRO: there the
+    leak serves the leak-first ret2libc; the pure-PLT leak discipline
+    owns the full-RELRO shape.
+  - `callme` pack: `app_callme_banner` - the three announced helpers
+    (leaked_address one/two/three) plus the pop3 gadget fire the
+    3-argument flow when the helpers are local, not PLT imports.
+  - `uaf_tcache` pack: `app_uaf_tcache_safelink` - glibc >= 2.32
+    safe-linking plus a heap function pointer documents the
+    fn-pointer overwrite path.
+  - `ret2partial_overwrite` pack stands down when a leak primitive or
+    a libc anchor exists: the byte hop is the no-leak fallback.
+- `spec/augure/mr5_targets_spec.rb`: the ten MR5 fact shapes, each
+  freezing the ORACLE's expected proposal as ranking top-1.
+
+### Fixed
+
+- No frozen corpus verdict moved: every applicable set in
+  `lib/augure/ctf_corpus.json` is byte-identical (the refined rules
+  only stand down on fact shapes no frozen entry carries).
+
 ## [0.3.1] - 2026-11-02
 
 ### Fixed
