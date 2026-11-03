@@ -52,6 +52,12 @@ module Augure
       "return_addr_filtered" => %w[true false]
     }.freeze
 
+    # Hard cap on suggested facts accepted in one merge (P1): the
+    # measured brainforge pilot emitted 802 facts for one target. The
+    # cap is overridable per call; overflow is named loudly, never
+    # silently truncated.
+    SUGGEST_CAP = 16
+
     include Enumerable
 
     def self.parse(text)
@@ -64,6 +70,7 @@ module Augure
 
     def initialize
       @rels = {}
+      @sources = {}
     end
 
     def parse(text)
@@ -94,17 +101,79 @@ module Augure
     def merge(other)
       merged = self.class.new
       rels = merged.instance_variable_get(:@rels)
+      sources = merged.instance_variable_get(:@sources)
       other_r = other.instance_variable_get(:@rels)
+      other_s = other.instance_variable_get(:@sources)
       SCHEMA.each_key do |name|
         combined = Array(@rels[name]) + Array(other_r[name])
-        rels[name] = combined unless combined.empty?
+        next if combined.empty?
+
+        rels[name] = combined
+        combined.each do |tuple|
+          key = [name, tuple]
+          own = Array(@sources[key])
+          ext = Array(other_s[key])
+          sources[key] = (own + ext).uniq unless own.empty? && ext.empty?
+        end
       end
       merged
     end
 
+    # The LLM suggest merge path (P1): deduplicate identical lines
+    # preserving first-emission order, cap the accepted suggested facts
+    # at +cap+, and warn loudly on every rejection. A line repeating a
+    # fact the store already carries is a duplicate (its provenance IS
+    # recorded - the profiler and the suggest step agreed - but it does
+    # not consume the cap).
+    #
+    # @param text [String] raw suggestion fact lines
+    # @param cap [Integer] hard cap on accepted suggested facts
+    # @param warn [#call] warning sink (default: $stderr)
+    # @return [Hash] {accepted:, duplicates:, dropped:}
+    def merge_suggested(text, cap: SUGGEST_CAP, warn: $stderr.method(:puts))
+      accepted = 0
+      duplicates = 0
+      dropped = 0
+      text.each_line.with_index(1) do |line, lineno|
+        line = line.rstrip
+        next if line.empty? || line.start_with?("//")
+
+        name, args = parse_line(line, lineno)
+        if @rels[name]&.include?(args)
+          # duplicate line: record the provenance (both classes agree)
+          # without storing another tuple
+          sources = (@sources[[name, args]] ||= [])
+          sources << :suggested unless sources.include?(:suggested)
+          duplicates += 1
+          dropped += 1
+        elsif accepted >= cap
+          dropped += 1
+        else
+          begin
+            add(name, *args, source: :suggested)
+          rescue UnknownPredicate, MalformedFact => e
+            raise e.class, "line #{lineno}: #{e.message}"
+          end
+          accepted += 1
+        end
+      end
+
+      if dropped.positive?
+        warn.call "augure: suggest merge dropped #{dropped} fact(s) " \
+                  "(cap #{cap}, accepted #{accepted}, duplicates #{duplicates}); " \
+                  "trim the suggestion stream or raise the cap explicitly."
+      end
+      {accepted: accepted, duplicates: duplicates, dropped: dropped}
+    end
+
     # Builder API for programmatic construction (the profiler's contract):
     # identical validation as parsing - same schema, same loud failures.
-    def add(name, *args)
+    # Every fact carries its provenance class: the profiler/harvest path
+    # emits measured facts (default), the LLM suggest path emits
+    # suggested facts. The class is recorded in a parallel registry and
+    # reported by #source_of, so a decision can be audited against what
+    # the binary actually showed versus what the model claimed.
+    def add(name, *args, source: :measured)
       raise UnknownPredicate, "unknown predicate #{name.inspect}" unless SCHEMA.key?(name)
 
       arity = SCHEMA[name]
@@ -135,7 +204,20 @@ module Augure
         raise MalformedFact, "#{name}: fact atoms may not be empty strings"
       end
       (@rels[name] ||= []) << args
+      (@sources[[name, args]] ||= []) << source unless @sources[[name, args]]&.include?(source)
       self
+    end
+
+    # The provenance classes recorded for one fact (e.g. %i[measured]),
+    # in the order the sources entered the store.
+    def source_of(name, *args)
+      @sources[[name, args]] || []
+    end
+
+    # True when the profiler/harvest path (not just the LLM suggest)
+    # produced this fact - the corroboration precondition tests rest on it.
+    def measured?(name, *args)
+      @sources[[name, args]]&.include?(:measured)
     end
 
     def to_s
@@ -146,7 +228,11 @@ module Augure
 
     private
 
-    def consume(line, lineno)
+    # Pure parsing: validates the grammar, vocabulary and atoms of one
+    # fact line and returns [name, args] without touching the store.
+    # Both #consume and #merge_suggested go through this, so the
+    # suggest path enforces the exact same loud failures.
+    def parse_line(line, lineno)
       raise MalformedFact, "line #{lineno}: rules are not facts, only facts belong here" if line.include?(":-")
 
       match = line.match(/\A([a-z][a-z0-9_]*)\((.*)\)\.\z/)
@@ -157,11 +243,23 @@ module Augure
       raise UnknownPredicate, "line #{lineno}: unknown predicate #{name.inspect}" unless SCHEMA.key?(name)
 
       args = parse_args(raw_args, name, lineno)
+      arity = SCHEMA[name]
+      raise MalformedFact, "line #{lineno}: #{name} expects arity #{arity}, got #{args.size}" unless args.size == arity
+
       begin
-        add(name, *args)
-      rescue UnknownPredicate, MalformedFact => e
-        raise e.class, "line #{lineno}: #{e.message}"
+        # dry-run validation: schema, arity, types and domains without
+        # storing anything - so the cap/dedupe decisions in
+        # #merge_suggested are made on a fact that will actually parse.
+        check_types(name, args, lineno)
+      rescue MalformedFact => e
+        raise e.class, "line #{lineno}: #{e.message.sub(/\Aline \d+: /, "")}"
       end
+      [name, args]
+    end
+
+    def consume(line, lineno)
+      name, args = parse_line(line, lineno)
+      add(name, *args)
     end
 
     def parse_args(raw, name, lineno)

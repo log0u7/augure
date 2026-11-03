@@ -16,7 +16,7 @@ module Augure
   #   5. provenance is mandatory (author + source)
   #   6. the corpus guard runs in PackLoader (belt and braces on 4)
   class Pack
-    CONDITION_VOCABULARY = %w[fact not_fact match cmp].freeze
+    CONDITION_VOCABULARY = %w[fact not_fact match cmp corroborated].freeze
 
     attr_reader :technique, :author, :source, :rules, :kb, :mcts, :priors, :build, :detection, :mitre
 
@@ -123,6 +123,17 @@ module Augure
         unless cond[3].is_a?(Integer)
           reject "#{label}: cmp operand #{cond[3].inspect} must be an integer (the engine compares integer fact values)"
         end
+      elsif kind == "corroborated"
+        # P3: [corroborated, rel, val, [[c_rel, c_val], ...]] - the fact
+        # must be measured, or backed by at least one measured
+        # corroboration fact from the list.
+        reject "#{label}: corroborated needs [corroborated, rel, val, with]" unless cond.size == 4
+        reject "#{label}: unknown predicate #{rel.inspect}" unless known_predicates.include?(rel)
+        with = cond[3]
+        unless with.is_a?(Array) && !with.empty? &&
+            with.all? { |pair| pair.is_a?(Array) && pair.size == 2 && known_predicates.include?(pair[0]) }
+          reject "#{label}: corroborated 'with' must be a non-empty list of [rel, val] pairs naming known predicates"
+        end
       elsif kind == "match"
         reject "#{label}: match pattern #{cond[3].inspect} must be a string" unless cond[3].is_a?(String)
         begin
@@ -177,9 +188,7 @@ module Augure
     def validate_detection(detection)
       return if detection.nil?
 
-      unless detection.is_a?(Array) && !detection.empty?
-        reject "detection: must be a non-empty array"
-      end
+      reject "detection: must be a non-empty array" unless detection.is_a?(Array) && !detection.empty?
       detection.each_with_index do |e, i|
         unless e.is_a?(Hash) && DETECTION_CHANNELS.include?(e["channel"])
           reject "detection #{i}: channel must be from #{DETECTION_CHANNELS.inspect}"

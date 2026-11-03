@@ -26,8 +26,13 @@ module Augure
     # need it - the pipeline does not run a solver behind the scenes.
     # plan: false skips the MCTS search (the corpus guard needs only the
     # deterministic applicable + prior-mean ranking; MCTS is the costly part).
-    def analyze(facts:, seed: nil, priors: nil, buffer_size: 256, packs: nil, plan: true)
+    def analyze(facts:, seed: nil, priors: nil, buffer_size: 256, packs: nil, plan: true, suggest: nil,
+      suggest_cap: nil)
       facts = Facts.parse(facts) if facts.is_a?(String)
+      suggest_stats = nil
+      if suggest
+        suggest_stats = suggest_cap ? facts.merge_suggested(suggest, cap: suggest_cap) : facts.merge_suggested(suggest)
+      end
       engine_rules = packs ? Rules.all + packs.flat_map(&:rules) : Rules.all
       effective_priors = PackLoader.priors_with(packs, priors || default_priors)
       engine_result = Engine.new(facts, rules: engine_rules).run
@@ -43,7 +48,7 @@ module Augure
       selected = bandit.select(candidates.empty? ? applicable : candidates)
       plan = plan ? plan_for(applicable, seed: seed, packs: packs) : []
 
-      {
+      decision = {
         applicable: applicable,
         verified: verified,
         ranking: ranking.map(&:first),
@@ -51,6 +56,8 @@ module Augure
         plan: plan,
         explain: {provenance: explain_provenance(engine_result)}
       }
+      decision[:suggest] = suggest_stats if suggest_stats
+      decision
     end
 
     # The explain payload: per applicable technique, the rules that
@@ -59,7 +66,7 @@ module Augure
       heads = engine_result.provenance_by_head.select { |head, _| head[0] == Rules::APPLICABLE }
       heads.transform_keys { |head| head[1] }.transform_values do |provs|
         provs.map do |p|
-          {rule: p[:rule], evidence: p[:evidence], origin: p[:origin]}
+          {rule: p[:rule], evidence: p[:evidence], origin: p[:origin], evidence_sources: p[:evidence_sources]}
         end
       end
     end
