@@ -508,6 +508,16 @@
         ],
         "selected": "srop",
         "truth": "srop"
+      },
+      {
+        "suite": "pwnable",
+        "name": "uaf_twin_a",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\nplt(\"free\").\nplt(\"__libc_start_main\").\nplt(\"puts\").\nplt(\"printf\").\nplt(\"fputs\").\nplt(\"strcspn\").\nplt(\"fgets\").\nplt(\"strtoull\").\nplt(\"malloc\").\nplt(\"fflush\").\nplt(\"setvbuf\").\nplt(\"fopen\").\nplt(\"exit\").\nplt(\"fwrite\").\ngadget(\"ret_align\", 4198422).\ntarget_function(\"true\").\nwin_symbol(\"win\", 4198886).",
+        "applicable": [],
+        "ranked": [],
+        "selected": null,
+        "truth": "uaf_tcache",
+        "pack_verdict": "uaf_tcache"
       }
     ],
     "phoenix": [

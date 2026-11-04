@@ -8,6 +8,14 @@ rules:
     conditions:
       - [fact, vuln, uaf]
       - [fact, allocator, tcache]
+  # The static route (MR6 twins, 2026-11-04): the profiler measures
+  # malloc + free in the PLT but never emits vuln("uaf") - that signal
+  # only ever came from the suggest LLM, whose absence left the
+  # technique unreachable (0/40 rollouts on the twins). When the
+  # profiled vuln fact is absent, malloc + free IS the uaf candidate:
+  # the heap packs keep their verdicts wherever vuln("heap") IS
+  # measured, so this rule never steals one (corpus: tcache_tear,
+  # old_dayz).
   # Sibling provenance for the modern-glibc shape (mr5 uaf_heap-002):
   # glibc 2.32+ mangles tcache next pointers (PROTECT_PTR, safe-linking)
   # and the win rides a heap-resident function pointer - the overwrite
@@ -19,6 +27,12 @@ rules:
       - [fact, allocator, tcache]
       - [cmp, glibc_minor, ge, 32]
       - [fact, function_pointer_on_heap, true]
+  - id: app_uaf_tcache_static
+    head: [applicable, uaf_tcache]
+    conditions:
+      - [fact, plt, free]
+      - [fact, plt, malloc]
+      - [not_fact, vuln, heap]
 
 kb:
   - id: uaf_tcache_001
