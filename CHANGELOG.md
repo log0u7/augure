@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The uaf_tcache static route: when the profiler measures malloc + free
+  in the PLT and no vuln("heap") fact, the technique is applicable from
+  the measured facts alone - previously it required the suggest LLM's
+  vuln("uaf") fact, and its absence left the technique unreachable
+  (0/40 rollouts on the MR6 uaf twins). Corpus entry `pwnable/uaf_twin_a`
+  locks the rule through the pack_verdict guard; the benchmark count
+  moves 33 -> 34 (both frozen at 100% concordance).
+
 - The MR5 lab technique classes, encoded as rules so the measured
   2026-11-03 decision log routes them right (each rule cites the
   target's ORACLE.md as provenance):
