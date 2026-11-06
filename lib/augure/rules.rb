@@ -227,26 +227,34 @@ module Augure
         b.rule :app_fmtstr_write, ["applicable", "fmtstr_write"],
           source: "format string bug: arbitrary write, NX-independent" do |c|
           c.corroborated "vuln", "fmtstr",
-            with: [%w[fmtstr_read true], %w[plt printf], %w[plt snprintf]]
+            with: [%w[fmtstr_read true],
+              %w[vuln_hint unsafe_func:printf],
+              %w[vuln_hint unsafe_func:sprintf]]
         end
         # The leak is a strategy of its own when there is a read primitive or
         # a protection worth bypassing: %x/%s reads defeat PIE and canaries.
         b.rule :app_fmtstr_leak_read, ["applicable", "fmtstr_leak"],
           source: "read primitive: arbitrary stack read via format string" do |c|
           c.corroborated "vuln", "fmtstr",
-            with: [%w[fmtstr_read true], %w[plt printf], %w[plt snprintf]]
+            with: [%w[fmtstr_read true],
+              %w[vuln_hint unsafe_func:printf],
+              %w[vuln_hint unsafe_func:sprintf]]
           c.fact "fmtstr_read", "true"
         end
         b.rule :app_fmtstr_leak_pie, ["applicable", "fmtstr_leak"],
           source: "PIE on: leak a code pointer to defeat ASLR" do |c|
           c.corroborated "vuln", "fmtstr",
-            with: [%w[fmtstr_read true], %w[plt printf], %w[plt snprintf]]
+            with: [%w[fmtstr_read true],
+              %w[vuln_hint unsafe_func:printf],
+              %w[vuln_hint unsafe_func:sprintf]]
           c.fact "pie", "true"
         end
         b.rule :app_fmtstr_leak_canary, ["applicable", "fmtstr_leak"],
           source: "canary on: leak the stack cookie before smashing" do |c|
           c.corroborated "vuln", "fmtstr",
-            with: [%w[fmtstr_read true], %w[plt printf], %w[plt snprintf]]
+            with: [%w[fmtstr_read true],
+              %w[vuln_hint unsafe_func:printf],
+              %w[vuln_hint unsafe_func:sprintf]]
           c.fact "canary", "true"
         end
 

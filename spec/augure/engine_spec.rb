@@ -99,6 +99,27 @@ RSpec.describe Augure::Engine do
         .to eq(["fmtstr_write"])
     end
 
+    it "does not fire fmtstr_write from a suggested-only vuln plus a weak signal" do
+      # P3 gate: a suggested vuln("fmtstr") cannot fire fmtstr techniques on
+      # the strength of a coincidental measured printf in the binary - the
+      # menu/banner printf exists in nearly every lab target, and the bogus
+      # suggested vuln flipped the routing away from the correct static rule
+      # (bench dead zones: ret2libc-001, srop-001, uaf_heap-001, callme-002).
+      # The strong signal is fmtstr_read: the profiler only measures it when
+      # user input actually reaches a printf-family format argument.
+      f = facts_for("vuln(\"sof\").\nplt(\"printf\").\ngadget(\"pop_rdi_ret\", 1).\n")
+      f.merge_suggested("vuln(\"fmtstr\").\n")
+      expect(described_class.new(f).run.applicable).not_to include("fmtstr_write")
+    end
+
+    it "still fires fmtstr_write when fmtstr_read is measured" do
+      # the strong corroboration path stays open: fmtstr_read measured means
+      # the profiler saw user input reach a format argument.
+      f = facts_for("vuln(\"sof\").\nfmtstr_read(\"true\").\n")
+      f.merge_suggested("vuln(\"fmtstr\").\n")
+      expect(described_class.new(f).run.applicable).to include("fmtstr_write")
+    end
+
     it "splits heap techniques by allocator and glibc minor" do
       tcache = "vuln(\"heap\").\nallocator(\"tcache\").\n"
       glibc = "vuln(\"heap\").\nglibc_minor(27).\n"

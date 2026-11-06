@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The fmtstr corroboration gate: a suggested-only `vuln("fmtstr")` could
+  fire fmtstr techniques through the weak `plt("printf")`/`plt("snprintf")`
+  corroboration path, flipping routing away from the correct static rule
+  (measured on the brainforge uaf_heap-001 and ret2libc-001 trails). The
+  four fmtstr rules now corroborate a suggested-only vuln with measured
+  strong signals only: `fmtstr_read`, or an explicit
+  `vuln_hint(unsafe_func:printf|sprintf)` from the profiler. Plain
+  `plt("printf")` presence is no longer sufficient. Corpus conformance
+  (protostar format0/format4) stays byte-for-byte intact.
+
 ### Added
 
 - The uaf_tcache static route: when the profiler measures malloc + free
