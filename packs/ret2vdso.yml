@@ -28,7 +28,7 @@ mcts:
   terminal: true
   success: 0.30
 
-priors: [5, 15]
+priors: [1, 5]
 
 
 # The defender side (the corpus read backwards): what this technique
