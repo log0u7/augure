@@ -6,7 +6,7 @@ rules:
   - id: app_uaf_tcache
     head: [applicable, uaf_tcache]
     conditions:
-      - [fact, vuln, uaf]
+      - [corroborated, vuln, uaf, [[vuln, uaf]]]
       - [fact, allocator, tcache]
   # The static route (MR6 twins, 2026-11-04): the profiler measures
   # malloc + free in the PLT but never emits vuln("uaf") - that signal
@@ -23,7 +23,7 @@ rules:
   - id: app_uaf_tcache_safelink
     head: [applicable, uaf_tcache]
     conditions:
-      - [fact, vuln, uaf]
+      - [corroborated, vuln, uaf, [[vuln, uaf]]]
       - [fact, allocator, tcache]
       - [cmp, glibc_minor, ge, 32]
       - [fact, function_pointer_on_heap, true]
