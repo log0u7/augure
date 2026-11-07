@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Provenance survives the disk round-trip: `Facts#to_s` now serializes a
+  suggested-only fact with a `// suggested` marker, and `Facts.parse`
+  restores it as the weaker provenance class. Before, the `lictor suggest`
+  round-trip re-ingested every LLM proposal as `measured`, opening the
+  fmtstr corroboration gate on facts the profiler never saw (measured on
+  the brainforge srop-001 and ret2libc-001 trails). The marker can only
+  demote, never promote: a hand-edited line cannot open a closed gate.
+
 - The fmtstr corroboration gate: a suggested-only `vuln("fmtstr")` could
   fire fmtstr techniques through the weak `plt("printf")`/`plt("snprintf")`
   corroboration path, flipping routing away from the correct static rule
