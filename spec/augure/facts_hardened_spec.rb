@@ -103,4 +103,53 @@ RSpec.describe "hardened facts: suggest merge + provenance" do
       expect(sources).to include("measured")
     end
   end
+
+  describe "P3: provenance survives the disk round-trip" do
+    it "marks suggested-only facts with the // suggested marker on to_s" do
+      facts = Augure::Facts.parse("plt(\"puts\").\n")
+      facts.merge_suggested("vuln(\"fmtstr\").\n", warn: warnings.method(:puts))
+      out = facts.to_s
+      expect(out).to include("plt(\"puts\").\n")
+      expect(out).to include("vuln(\"fmtstr\"). // suggested\n")
+    end
+
+    it "round-trips suggested-only facts as suggested (measured? stays false)" do
+      facts = Augure::Facts.parse("plt(\"puts\").\n")
+      facts.merge_suggested("vuln(\"fmtstr\").\n", warn: warnings.method(:puts))
+      again = Augure::Facts.parse(facts.to_s)
+      expect(again.measured?("vuln", "fmtstr")).to be(false)
+      expect(again.source_of("vuln", "fmtstr")).to eq(%i[suggested])
+      expect(again.measured?("plt", "puts")).to be(true)
+    end
+
+    it "keeps a profiler-agreed fact plain: measured wins the emission" do
+      facts = Augure::Facts.parse("plt(\"puts\").\n")
+      facts.merge_suggested("plt(\"puts\").\n", warn: warnings.method(:puts))
+      expect(facts.source_of("plt", "puts")).to eq(%i[measured suggested])
+      again = Augure::Facts.parse(facts.to_s)
+      expect(again.measured?("plt", "puts")).to be(true)
+    end
+
+    it "keeps the fmtstr corroboration gate closed across the round-trip (srop-001 shape)" do
+      base = "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\n" \
+        "vuln(\"sof\").\nplt(\"__libc_start_main\").\nplt(\"puts\").\nplt(\"snprintf\").\n"
+      facts = Augure::Facts.parse(base)
+      facts.merge_suggested("vuln(\"fmtstr\").\n", warn: warnings.method(:puts))
+
+      decision = Augure::Pipeline.analyze(facts: facts.to_s)
+      expect(decision[:applicable]).not_to include("fmtstr_write")
+      expect(decision[:applicable]).to include("ret2libc")
+    end
+
+    it "still opens the gate when the profiler measured the corroborator itself" do
+      base = "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\n" \
+        "vuln(\"sof\").\nplt(\"__libc_start_main\").\nplt(\"puts\").\nplt(\"snprintf\").\n" \
+        "fmtstr_read(\"true\").\n"
+      facts = Augure::Facts.parse(base)
+      facts.merge_suggested("vuln(\"fmtstr\").\n", warn: warnings.method(:puts))
+
+      decision = Augure::Pipeline.analyze(facts: facts.to_s)
+      expect(decision[:applicable]).to include("fmtstr_write")
+    end
+  end
 end

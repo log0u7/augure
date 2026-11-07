@@ -58,6 +58,11 @@ module Augure
     # silently truncated.
     SUGGEST_CAP = 16
 
+    # The on-disk provenance marker (P3): serialization of a suggested-only
+    # fact. The marker can only ever mark a fact as the WEAKER class, so a
+    # hostile hand-edited line can close a gate, never open one.
+    SUGGESTED_MARKER_RE = %r{\s*//\s*suggested\z}
+
     include Enumerable
 
     def self.parse(text)
@@ -76,9 +81,13 @@ module Augure
     def parse(text)
       text.each_line.with_index(1) do |line, lineno|
         line = line.rstrip
+        # the P3 marker travels WITH the fact line: strip it and tag the
+        # fact as the weaker provenance class before grammar validation
+        suggested = !line.sub!(SUGGESTED_MARKER_RE, "").nil?
+        line = line.rstrip
         next if line.empty? || line.start_with?("//")
 
-        consume(line, lineno)
+        consume(line, lineno, source: suggested ? :suggested : :measured)
       end
       self
     end
@@ -222,7 +231,13 @@ module Augure
 
     def to_s
       SCHEMA.filter_map do |name, _arity|
-        @rels.fetch(name, []).map { |tuple| emit_fact(name, tuple) }
+        @rels.fetch(name, []).map do |tuple|
+          sources = @sources[[name, tuple]] || []
+          line = emit_fact(name, tuple)
+          next line if sources.include?(:measured) || !sources.include?(:suggested)
+
+          line.sub(/\n\z/, " // suggested\n")
+        end
       end.join
     end
 
@@ -257,9 +272,9 @@ module Augure
       [name, args]
     end
 
-    def consume(line, lineno)
+    def consume(line, lineno, source: :measured)
       name, args = parse_line(line, lineno)
-      add(name, *args)
+      add(name, *args, source: source)
     end
 
     def parse_args(raw, name, lineno)
