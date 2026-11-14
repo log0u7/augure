@@ -279,6 +279,34 @@ RSpec.describe "MR5 lab targets" do
     end
   end
 
+  describe "orw-eval (prctl import, no execve)" do
+    let(:facts) do
+      <<~FACTS
+        nx("false").
+        pie("false").
+        canary("false").
+        relro("partial").
+        plt("__libc_start_main").
+        plt("puts").
+        plt("read").
+        plt("prctl").
+        leaked_address("buf", 140725538596080).
+      FACTS
+    end
+
+    it "proposes orw, not shellcode" do
+      decision = decide(facts)
+      expect(decision[:applicable]).to include("orw")
+      expect(decision[:applicable]).not_to include("shellcode")
+      expect(rules_for(decision, "orw")).to include(:app_orw_stack)
+    end
+
+    it "derives the seccomp fact from the prctl import" do
+      engine = Augure::Engine.new(Augure::Facts.parse(facts)).run
+      expect(engine.derived("seccomp")).to eq([["true"]])
+    end
+  end
+
   describe "srop-001 (sigreturn gadget)" do
     let(:facts) do
       <<~FACTS

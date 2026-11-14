@@ -92,6 +92,15 @@ module Augure
           source: "the sigreturn pivot carries the syscall instruction" do |c|
           c.match "gadget", 0, "sigreturn"
         end
+        # The seccomp filter's control call: prctl is its entry point
+        # (SECCOMP_MODE_FILTER). The import is the strongest static
+        # signal the profiler can give - it is the filter, not a
+        # personality quirk. The orw pack owns the seccomp case; the
+        # execve techniques stand down on it.
+        b.rule :fam_seccomp_filter, %w[seccomp true],
+          source: "prctl import: the filter control call is in the binary" do |c|
+          c.match "plt", 0, "prctl"
+        end
         # A ROP chain needs a terminus: a syscall to aim, an arbitrary
         # write, a win function, or a PLT destination worth calling. A
         # lone pop gadget chains PLT calls at best - that is the
