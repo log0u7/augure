@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The `callme_eval2` pack ships: the announced-nothing callme shape
+  (three gated stages called through a pop rdi/rsi/rdx gadget, every
+  address a `sym_addr` fact). The ropemporium/callme corpus entry now
+  carries `pack_verdict: callme_eval2`: with the pack loaded the
+  documented answer is the eval twin's technique (it keys on the pop3
+  gadget the classic facts already carry, and its KB claims the higher
+  success rate); without it the frozen `rop` verdict stands untouched.
+
 - The profiler emits `fmt_offset(N)` for the fmtstr class: the format
   buffer's argument index, derived statically off the frame (`sub rsp`
   alloc + the `lea [rbp-disp]` feeding rdi: `N = 6 + (frame - disp) / 8`,

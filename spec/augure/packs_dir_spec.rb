@@ -14,8 +14,20 @@ RSpec.describe "the shipped technique packs" do
       "got_partial_overwrite", "brop", "ret2partial_overwrite", "one_gadget",
       "orw", "banner_leak", "jop", "large_bin_attack", "house_of_apple2",
       "setcontext_srop", "uaf_tcache", "ret2vdso", "got_partial_overwrite_deref",
-      "callme"
+      "callme", "callme_eval2"
     )
+  end
+
+  it "takes the callme top-1 only through the documented pack verdict" do
+    # the callme corpus shape, with the pop3 gadget the eval twin's
+    # rule keys on: with the pack loaded, the verdict is callme_eval2
+    facts = "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nrelro(\"partial\").\n" \
+      "plt(\"callme_one\").\nplt(\"callme_two\").\nplt(\"callme_three\").\nplt(\"puts\").\n" \
+      "plt(\"memset\").\nplt(\"read\").\nplt(\"printf\").\nplt(\"exit\").\n" \
+      "gadget(\"pop_rdi_rsi_rdx_ret\", 4198400).\ngadget(\"pop_rdi_ret\", 4198400).\n" \
+      "gadget(\"ret_align\", 4198400).\nvuln_hint(\"unsafe_func:gets\")."
+    decision = Augure::Pipeline.analyze(facts: facts, packs: packs, plan: false)
+    expect(decision[:ranking].first).to eq("callme_eval2")
   end
 
   it "passes the corpus guard: no frozen verdict moves" do
