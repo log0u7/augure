@@ -20,7 +20,7 @@ RSpec.describe AugureProfiler::Profiler do
       base = 0x400640
       addrs = described_class.csu_gadget_addrs(blob, base, blob.bytesize)
       expect(addrs[:mov]).to eq(base + 8)
-      expect(addrs[:popper]).to eq(base + 8 + NEWER_MOV.bytesize + 4 + 4)
+      expect(addrs[:popper]).to eq(base + 8 + newer_mov.bytesize + 4 + 4)
     end
 
     it "locates both gadgets in the classic flavor too" do
@@ -28,7 +28,7 @@ RSpec.describe AugureProfiler::Profiler do
       base = 0x400640
       addrs = described_class.csu_gadget_addrs(blob, base, blob.bytesize)
       expect(addrs[:mov]).to eq(base + 4)
-      expect(addrs[:popper]).to eq(base + 4 + CLASSIC_MOV.bytesize + 2 + 4)
+      expect(addrs[:popper]).to eq(base + 4 + classic_mov.bytesize + 2 + 4)
     end
 
     it "reports nothing when the signatures are absent" do
@@ -45,6 +45,23 @@ RSpec.describe AugureProfiler::Profiler do
       facts = described_class.new(bin).facts.to_s
       expect(facts).to match(/gadget\("pop_rsi_r15_ret", \d+\)/)
       expect(facts).to match(/gadget\("pop_rdi_ret", \d+\)/)
+    end
+  end
+
+  describe "#facts, a binary carrying the sigreturn gadget" do
+    it "emits the sigreturn pivot at the mov rax,15; syscall bytes" do
+      bin = ProfilerBinaryBuilder.sigreturn
+      facts = described_class.new(bin).facts.to_s
+      expect(facts).to match(/gadget\("sigreturn", \d+\)/)
+    end
+  end
+
+  describe "#facts, a binary carrying the callme eval twin's pop3 gadget" do
+    it "emits pop_rdi_rsi_rdx_ret and keeps the overlapping pop_rdx_ret" do
+      bin = ProfilerBinaryBuilder.pop_rdi_rsi_rdx
+      facts = described_class.new(bin).facts.to_s
+      expect(facts).to match(/gadget\("pop_rdi_rsi_rdx_ret", \d+\)/)
+      expect(facts).to match(/gadget\("pop_rdx_ret", \d+\)/)
     end
   end
 

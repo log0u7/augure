@@ -36,6 +36,9 @@ RSpec.describe "the profiler's own vuln facts (the knowledge the binary carries)
     facts = AugureProfiler::Profiler.new(bin).facts.to_s
     expect(facts).to match(/vuln\("fmtstr"\)/)
     expect(facts).to match(/fmtstr_read\("true"\)/)
+    # the autonomy contract: the buffer's argument index comes off the
+    # frame, no runtime probe
+    expect(facts).to match(/fmt_offset\("6"\)/)
   end
 
   it "stays silent on a sized stdin read whose immediate cannot reach the return slot" do

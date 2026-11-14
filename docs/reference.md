@@ -74,6 +74,7 @@ vuln_hint("unsafe_func:gets").
 | `shellcode_input` | 1 | string | input reachable and executable |
 | `sigreturn_frame` | 1 | string | sigreturn frame constructible |
 | `fmtstr_read` | 1 | string | format string has a read primitive |
+| `fmt_offset` | 1 | integer as string | the format buffer's argument index, derived statically off the frame |
 | `reloc_writable` | 1 | string | relocations writable (ret2dlresolve) |
 | `dt_lazy` | 1 | string | lazy binding in effect |
 | `limited_stack` | 1 | string | stack space constrains the chain |

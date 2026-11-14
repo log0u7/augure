@@ -52,6 +52,73 @@ module ProfilerBinaryBuilder
     bin
   end
 
+  # A binary whose .text carries the callme eval twin's gadget bytes
+  # (pop rdi ; pop rsi ; pop rdx ; ret): the three-register popper the
+  # chain needs to load rdi/rsi/rdx per stage.
+  def pop_rdi_rsi_rdx(dir = Dir.mktmpdir("augure_pop3"))
+    src = File.join(dir, "gadget.c")
+    File.write(src, <<~C)
+      __attribute__((noinline, used)) void the_gadget(void) {
+        __asm__ volatile(".byte 0x5f,0x5e,0x5a,0xc3");
+      }
+      int main(void) { return 0; }
+    C
+    bin = File.join(dir, "gadget_bin")
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-no-pie", "-O0")
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
+  # A binary whose .text carries the srop gadget bytes (mov rax, 15 ;
+  # syscall): the sigreturn pivot. NO ret after the syscall - the frame
+  # carries the next rip.
+  def sigreturn(dir = Dir.mktmpdir("augure_srop"))
+    src = File.join(dir, "gadget.c")
+    File.write(src, <<~C)
+      __attribute__((noinline, used)) void the_gadget(void) {
+        __asm__ volatile(".byte 0x48,0xc7,0xc0,0x0f,0x00,0x00,0x00,0x0f,0x05");
+      }
+      int main(void) { return 0; }
+    C
+    bin = File.join(dir, "gadget_bin")
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin, "-fno-stack-protector", "-no-pie", "-O0")
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
+  # A non-PIE binary defining a local stage function and a data string:
+  # the "announces NOTHING" twin shape, where the symbol table is the
+  # address source (sym_addr).
+  def local_symbols(dir = Dir.mktmpdir("augure_symaddr"))
+    build_symbol_holder(dir, "local_symbols", ["-no-pie"])
+  end
+
+  def local_symbols_pie(dir = Dir.mktmpdir("augure_symaddr_pie"))
+    build_symbol_holder(dir, "local_symbols_pie", ["-pie", "-fPIE"])
+  end
+
+  def local_symbols_static(dir = Dir.mktmpdir("augure_symaddr_static"))
+    build_symbol_holder(dir, "local_symbols_static", ["-static"])
+  end
+
+  def build_symbol_holder(dir, name, extra)
+    src = File.join(dir, "#{name}.c")
+    File.write(src, <<~C)
+      #include <stdio.h>
+      __attribute__((noinline, used)) void vault_arm(void) { putchar('a'); }
+      __attribute__((used)) char arg_cmd[] = "cat flag.txt";
+      int main(void) { puts(arg_cmd); vault_arm(); return 0; }
+    C
+    bin = File.join(dir, name)
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin,
+      "-fno-stack-protector", "-O0", *extra)
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
   # A binary that IMPORTS a win-named function (the ret2csu shape: the
   # win lives in the companion library). The import is not a win HERE:
   # no win_symbol, no target_function.

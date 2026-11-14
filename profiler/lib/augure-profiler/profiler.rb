@@ -24,8 +24,10 @@ module AugureProfiler
       ["pop_rdi_ret", "5f c3"],             # pop rdi ; ret
       ["pop_rsi_ret", "5e c3"],             # pop rsi ; ret
       ["pop_rsi_r15_ret", "5e 41 5f c3"],   # pop rsi ; pop r15 ; ret (the callme flavor)
+      ["pop_rdi_rsi_rdx_ret", "5f 5e 5a c3"], # pop rdi ; pop rsi ; pop rdx ; ret (the eval twin's pop3)
       ["pop_rdx_ret", "5a c3"],             # pop rdx ; ret
       ["pop_rax_ret", "58 c3"],             # pop rax ; ret
+      ["sigreturn", "48 c7 c0 0f 00 00 00 0f 05"], # mov rax, 15 ; syscall (the sigreturn pivot)
       ["JMP_STACK", "ff e4"],               # jmp esp/rsp - renamed per arch
       ["ret_align", "c3"]                   # ret
     ].freeze
@@ -66,11 +68,14 @@ module AugureProfiler
         facts.add("sink", static[:sink]) if static[:sink]
       end
 
-      sink = StaticOffset.stack_format_sink(@path)
-      return unless sink
+      fmt = StaticOffset.stack_format_sink(@path)
+      return unless fmt
 
       facts.add("vuln", "fmtstr")
       facts.add("fmtstr_read", "true")
+      # the buffer's argument index, derived off the frame: the exploit
+      # addresses the leak/write without a runtime probe
+      facts.add("fmt_offset", fmt[:fmt_offset].to_s) if fmt[:fmt_offset]
     end
 
     # the csu byte signatures, both known compiler flavors: the popper
@@ -133,6 +138,7 @@ module AugureProfiler
         facts.add("plt", sym.name) if plt_symbol?(sym)
       end
       emit_plt_addresses(facts)
+      emit_sym_addresses(facts)
       names.each do |n|
         facts.add("vuln_hint", "unsafe_func:#{n}") if UNSAFE_SYMBOLS.include?(n)
       end
@@ -184,6 +190,30 @@ module AugureProfiler
         end
         facts.add("got_addr", name, r.offset.to_i) if r.offset
         facts.add("plt_addr", name, stub) if stub
+      end
+    end
+
+    # The "announces NOTHING" twins (MR6 eval targets) print no banner:
+    # their stage functions, argument strings and gadgets are DEFINED
+    # symbols, and in a non-PIE module the symbol value IS the runtime
+    # address. This fact is the build layer's `sym:NAME` source.
+    #
+    # Two gates keep the fact base honest: an ET_DYN value is module-
+    # relative (not an address the runtime maps at that value, same
+    # reason as win_symbol), and a statically linked module's table
+    # carries the whole libc (hundreds of symbols) where no layout
+    # targets a name - the dynamic twins are the shape this serves.
+    def emit_sym_addresses(facts)
+      return unless @elf.header.type.to_s == "EXEC"
+      return unless @elf.segments.any? { |s| s.type.to_s == "INTERP" }
+
+      @elf.symbols.each do |sym|
+        name = sym.name.to_s
+        next unless name.match?(/\A[a-zA-Z_][a-zA-Z0-9_]*\z/)
+        next if sym.shndx.to_s == "UNDEF"
+        next unless %w[FUNC OBJECT NOTYPE].include?(sym.type.to_s)
+
+        facts.add("sym_addr", name, sym.value.to_i)
       end
     end
 

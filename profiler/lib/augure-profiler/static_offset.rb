@@ -143,9 +143,12 @@ module AugureProfiler
 
       # the length argument's register: rdx for the memcpy family, rsi
       # for fgets (buf, size, stream)
-      opcodes = (sink == "fgets") ?
-        [[0xbe], [0x48, 0xc7, 0xc6], [0x49, 0xc7, 0xc6]] : # mov esi/rsi, imm32
-        [[0xba], [0x48, 0xc7, 0xc2], [0x49, 0xc7, 0xc2]]   # mov edx/rdx, imm32
+      # mov esi/rsi, imm32
+      opcodes = if sink == "fgets"
+        [[0xbe], [0x48, 0xc7, 0xc6], [0x49, 0xc7, 0xc6]]
+      else
+        [[0xba], [0x48, 0xc7, 0xc2], [0x49, 0xc7, 0xc2]]
+      end # mov edx/rdx, imm32
 
       start = [call_off - 16, 0].max
       (start..(call_off - 5)).each do |j|
@@ -173,6 +176,9 @@ module AugureProfiler
     # the attacker's bytes - the fmtstr class. A .rodata format rides
     # an immediate (mov edi, imm32): not a vuln. x86 passes args on the
     # stack, no lea-into-rdi idiom to read: nil (an honest miss).
+    # Returns {sink:, fmt_offset:}: the buffer's argument index from
+    # printf's view, derived off the frame (rsp_at_call = rbp - frame,
+    # the first stack qword is %6: fmt_offset = 6 + (frame - disp) / 8).
     def stack_format_sink(path)
       elf = Metasm::ELF.decode_file(path)
       arch = (elf.header.e_class.to_s == "64") ? :x64 : :x86
@@ -194,7 +200,13 @@ module AugureProfiler
         target = text.addr + i + 5 + bytes[(i + 1)..(i + 4)].pack("C*").unpack1("l<")
         next unless like_addrs[target]
 
-        return like_addrs[target] if stack_format_rdi?(bytes, i)
+        disp = stack_format_disp(bytes, i)
+        next unless disp
+
+        frame = frame_size_at(bytes, i)
+        fmt_offset = nil
+        fmt_offset = 6 + (frame - disp) / 8 if frame && frame >= disp && (frame - disp) % 8 == 0
+        return {sink: like_addrs[target], fmt_offset: fmt_offset}
       end
       nil
     rescue Metasm::ParseError, Metasm::InvalidExeFormat
@@ -205,8 +217,10 @@ module AugureProfiler
     # (48) + 8d + modrm(mod=01|10, rm=101=rbp) = lea reg,[rbp-disp8|32].
     # reg=rdi (111) is the direct form; reg=rax (000) needs the
     # immediate mov rdi, rax (48 89 c7) right after the lea. Only 0x48
-    # qualifies as REX: REX.B would turn rbp into r13.
-    def stack_format_rdi?(bytes, call_off)
+    # qualifies as REX: REX.B would turn rbp into r13. Returns the
+    # buffer's rbp displacement (positive), nil when no such lea feeds
+    # the format argument.
+    def stack_format_disp(bytes, call_off)
       start = [call_off - 24, 0].max
       (start...(call_off - 3)).each do |j|
         next unless bytes[j] == 0x48
@@ -214,17 +228,45 @@ module AugureProfiler
 
         modrm = bytes[j + 2]
         mod = modrm >> 6
-        next unless mod == 0b01 || mod == 0b10
+        next unless [0b01, 0b10].include?(mod)
         next unless (modrm & 7) == 0b101
 
         reg = (modrm >> 3) & 7
         len = (mod == 0b01) ? 4 : 7
-        return true if reg == 0b111
-        next unless reg == 0b000
+        feeds_rdi = reg == 0b111 ||
+          (reg == 0b000 && bytes[j + len, 3] == [0x48, 0x89, 0xc7])
+        next unless feeds_rdi
 
-        return true if bytes[j + len, 3] == [0x48, 0x89, 0xc7]
+        disp = (mod == 0b01) ? bytes[j + 3] : bytes[j + 3, 4].pack("C*").unpack1("l<")
+        disp -= 256 if mod == 0b01 && disp > 127
+        return -disp if disp.negative?
       end
-      false
+      nil
+    end
+
+    # The frame allocation between the function's prologue (push rbp;
+    # mov rbp,rsp) and the call: the first sub rsp immediate is the
+    # frame size, so rsp_at_call = rbp - frame. 48 83 ec ib (imm8) /
+    # 48 81 ec id (imm32). nil without an rbp frame or an alloc.
+    def frame_size_at(bytes, call_off)
+      prologue = nil
+      (call_off - 3).downto(0) do |j|
+        next unless bytes[j] == 0x55 && bytes[j + 1] == 0x48 &&
+          bytes[j + 2] == 0x89 && bytes[j + 3] == 0xe5
+
+        prologue = j + 4
+        break
+      end
+      return nil unless prologue
+
+      (prologue...(call_off - 3)).each do |j|
+        if bytes[j] == 0x48 && bytes[j + 1] == 0x83 && bytes[j + 2] == 0xec
+          return bytes[j + 3]
+        elsif bytes[j] == 0x48 && bytes[j + 1] == 0x81 && bytes[j + 2] == 0xec
+          return bytes[j + 3, 4].pack("C*").unpack1("L<")
+        end
+      end
+      nil
     end
 
     # The buffer displacement in the argument setup, then the frame math:

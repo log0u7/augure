@@ -124,7 +124,8 @@
           ]
         ],
         "selected": "rop",
-        "truth": "rop"
+        "truth": "rop",
+        "pack_verdict": "callme_eval2"
       },
       {
         "suite": "ropemporium",

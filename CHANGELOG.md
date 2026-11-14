@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The `orw` pack teaches the build: two variants, walked in order. The
+  ROP path (nx on) chains openat(257)/read/write through the pop and
+  syscall gadgets the profiler carries, aiming the binary's own .data
+  anchors (`flag_path`, `out_buf`) - the filter's openat-only
+  discipline is the chain's first syscall, AT_FDCWD rides as its
+  unsigned qword. The stack path (nx off) keeps the executable-stack
+  stub with the harvest leak. Verified against the eval2 twin: the
+  chain prints the flag.
+
+- The `srop_eval2` pack ships: the announced-nothing SROP shape. The
+  sigreturn gadget (mov rax, 15; syscall) and the "/bin/sh" string are
+  sym_addr facts; the build lays out the full rt_sigreturn frame (uc
+  prefix, gregs in glibc enum order, fpregs 0) with rip pointing at
+  the gadget's own syscall tail (sym+7) - rax=59 fires execve there.
+  The frame was verified against the running twin (the restored
+  context spawned a shell that answered id).
+
+- The `ret2plt_eval2` pack ships: the announced-nothing ret2plt shape.
+  system@plt imported (a benign call in main), the command string
+  living in .data - the pack's rule keys on the `sym_addr("arg_cmd")`
+  fact, and the build layout chains pop rdi / sym:arg_cmd /
+  plt_addr:system. The sym_addr guard keeps it silent on every target
+  without a .data command string, so no frozen corpus verdict moves.
+
+- The `callme_eval2` pack ships: the announced-nothing callme shape
+  (three gated stages called through a pop rdi/rsi/rdx gadget, every
+  address a `sym_addr` fact). The ropemporium/callme corpus entry now
+  carries `pack_verdict: callme_eval2`: with the pack loaded the
+  documented answer is the eval twin's technique (it keys on the pop3
+  gadget the classic facts already carry, and its KB claims the higher
+  success rate); without it the frozen `rop` verdict stands untouched.
+
+- The profiler emits `fmt_offset(N)` for the fmtstr class: the format
+  buffer's argument index, derived statically off the frame (`sub rsp`
+  alloc + the `lea [rbp-disp]` feeding rdi: `N = 6 + (frame - disp) / 8`,
+  x64 SysV). The exploit addresses the leak/write without a runtime
+  probe - the binary answers by itself (verified against the runtime
+  `%6$p` truth on the eval2 fmtstr twin and the printf_stack fixture).
+
 ### Fixed
 
 - Provenance survives the disk round-trip: `Facts#to_s` now serializes a
@@ -28,6 +69,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (protostar format0/format4) stays byte-for-byte intact.
 
 ### Added
+
+- A pack's `build:` section accepts named `variants` (one `{name,
+  layout}` per binary shape of the same technique) next to the single
+  `layout` form; `layout` and `variants` are exclusive and each
+  variant needs a unique non-empty name. The armor gates the same slot
+  vocabulary per variant. The consumer (lictor's builder) walks the
+  variants and builds with the first whose references the facts
+  satisfy, so a technique can teach the mr5 PLT form and the static
+  twin's stage-function form at once. Documented in
+  `docs/build-format.md`.
+
+- The `sym_addr` fact: the profiler emits the DEFINED function,
+  object, and NOTYPE symbols of a non-PIE, dynamically linked module
+  (name and absolute address). The "announces NOTHING" MR6 eval twins
+  print no banner, so their stage functions (`vault_arm`, `sigreturn_gadget`,
+  hand-written `pop3_asm`), argument strings (`arg_cmd`) and buffers
+  (`input`) have no address anywhere else; the symbol table is the
+  measured source. Two gates keep the fact base honest: an ET_DYN
+  value is module-relative (not an address the runtime maps at that
+  value, the same reason `win_symbol` skips PIE), and a statically
+  linked module's table carries the whole libc, hundreds of symbols no
+  layout targets.
+
+- The profiler's gadget vocabulary grows the two gadgets the MR6 eval
+  twins need: the sigreturn pivot (`mov rax, 15; syscall` - the
+  `gadget("sigreturn")` fact that makes `fam_sigreturn_frame` +
+  `fam_syscall_from_sigreturn` fire on the real profile stream) and
+  the pop3 popper (`pop rdi; pop rsi; pop rdx; ret` - the
+  `pop_rdi_rsi_rdx_ret` fact the callme banner rule needs). Both
+  measured on the compiled callme-eval and srop-eval binaries.
+
+- The callme pack accepts the eval twins' stage names: the banner
+  rule's `leaked_address` matches now take `arm/fire/open` alongside
+  `one/two/three` - same capability class, different program (MR6
+  class transfer, never in any training dataset).
 
 - The uaf_tcache static route: when the profiler measures malloc + free
   in the PLT and no vuln("heap") fact, the technique is applicable from
