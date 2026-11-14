@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The `ret2plt_eval2` pack ships: the announced-nothing ret2plt shape.
+  system@plt imported (a benign call in main), the command string
+  living in .data - the pack's rule keys on the `sym_addr("arg_cmd")`
+  fact, and the build layout chains pop rdi / sym:arg_cmd /
+  plt_addr:system. The sym_addr guard keeps it silent on every target
+  without a .data command string, so no frozen corpus verdict moves.
+
 - The `callme_eval2` pack ships: the announced-nothing callme shape
   (three gated stages called through a pop rdi/rsi/rdx gadget, every
   address a `sym_addr` fact). The ropemporium/callme corpus entry now

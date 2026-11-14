@@ -7,14 +7,14 @@ RSpec.describe "the shipped technique packs" do
   let(:packs) { Augure::PackLoader.load_dir(File.expand_path("../../packs", __dir__)) }
   let(:names) { packs.map(&:technique) }
 
-  it "ships the twenty corpus-extending techniques plus the canonical example" do
+  it "ships the corpus-extending techniques plus the canonical example" do
     expect(names).to contain_exactly(
       "ret2csu_v2", "house_force", "house_orange", "house_botcake",
       "unsorted_bin_attack", "fastbin_hook", "ret2dlresolve_x86",
       "got_partial_overwrite", "brop", "ret2partial_overwrite", "one_gadget",
       "orw", "banner_leak", "jop", "large_bin_attack", "house_of_apple2",
       "setcontext_srop", "uaf_tcache", "ret2vdso", "got_partial_overwrite_deref",
-      "callme", "callme_eval2"
+      "callme", "callme_eval2", "ret2plt_eval2"
     )
   end
 
@@ -41,7 +41,8 @@ RSpec.describe "the shipped technique packs" do
     "got_partial_overwrite" => %{relro("partial").\ngot_overwrite_target("true").},
     "brop" => %{remote("true").\nverified("remote").\nnx("true").},
     "ret2partial_overwrite" => %{pie("true").\nvuln("sof").\ncanary("false").},
-    "one_gadget" => %{libc_present("true").\nnx("true").}
+    "one_gadget" => %{libc_present("true").\nnx("true").},
+    "ret2plt_eval2" => %{vuln("sof").\nnx("true").\npie("false").\nplt("system").\nsym_addr("arg_cmd", 4196032).}
   }.each do |technique, facts|
     it "makes #{technique} applicable on its fact shape" do
       decision = Augure::Pipeline.analyze(facts: facts, packs: packs, plan: false)

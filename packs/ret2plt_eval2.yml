@@ -1,0 +1,42 @@
+# Lab eval2 twin: the ret2plt call (announces NOTHING). system@plt
+# exists (a benign call in main); the command string lives in .data
+# and its address is never announced - the sym_addr fact answers.
+technique: ret2plt_eval2
+author: Gregory Epp
+source: https://github.com/log0u7/lictor-lab
+
+rules:
+  - id: app_ret2plt_eval2
+    head: [applicable, ret2plt_eval2]
+    conditions:
+      - [fact, vuln, sof]
+      - [fact, nx, true]
+      - [fact, pie, false]
+      - [fact, plt, system]
+      - [match, sym_addr, 0, "arg_cmd"]
+
+kb:
+  - id: ret2plt_eval2_001
+    technique: ret2plt_eval2
+    description: >
+      A straight call into system@plt: pop rdi fills the command
+      string's address (the .data sym_addr fact - the announced-nothing
+      discipline), then the PLT stub. No leak, no libc: the command
+      rides in the binary.
+    chain: [pop_rdi_ret, arg_cmd_string, system]
+    unlocks: [flag]
+    success_rate: 0.9
+
+mcts:
+  requires: []
+  provides: [flag]
+  terminal: true
+  success: 0.85
+
+priors: [10, 1]
+
+build:
+  technique: ret2plt_eval2
+  layout:
+    - [padding, measured_offset]
+    - [chain, "gadget:pop_rdi_ret", "sym:arg_cmd", "plt_addr:system"]
