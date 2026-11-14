@@ -28,9 +28,9 @@ rules:
       - [fact, vuln, sof]
       - [fact, nx, true]
       - [fact, pie, false]
-      - [match, leaked_address, 0, "^one$"]
-      - [match, leaked_address, 0, "^two$"]
-      - [match, leaked_address, 0, "^three$"]
+      - [match, leaked_address, 0, "^one$|^arm$"]
+      - [match, leaked_address, 0, "^two$|^fire$"]
+      - [match, leaked_address, 0, "^three$|^open$"]
       - [match, gadget, 0, pop_rdi_rsi_rdx|pop3]
 
 kb:

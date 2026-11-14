@@ -247,6 +247,42 @@ RSpec.describe "MR5 lab targets" do
     end
   end
 
+  describe "callme-eval (the eval twin's vault shape)" do
+    let(:facts) do
+      <<~FACTS
+        nx("true").
+        pie("false").
+        canary("false").
+        relro("partial").
+        plt("__libc_start_main").
+        plt("puts").
+        plt("read").
+        plt("memcpy").
+        gadget("pop_rdi_rsi_rdx_ret", 4199030).
+        gadget("ret_align", 4199033).
+        vuln("sof").
+        vuln_function("vuln_copy").
+        sink("memcpy").
+        leaked_address("arm", 4199131).
+        leaked_address("fire", 4199207).
+        leaked_address("open", 4199295).
+        leaked_address("pop3", 4199030).
+        leaked_address("probe", 4199083).
+      FACTS
+    end
+
+    it "proposes the callme 3-arg flow on the eval twin's stage names" do
+      decision = decide(facts)
+      expect(decision[:applicable]).to include("callme")
+      expect(decision[:ranking].first).to eq("callme")
+      expect(rules_for(decision, "callme")).to include(:app_callme_banner)
+    end
+
+    it "does not propose rop: the vault stages are the win, not a generic chain" do
+      expect(decide(facts)[:applicable]).not_to include("rop")
+    end
+  end
+
   describe "ret2plt-002 (full ASLR + pure-PLT primitives)" do
     let(:facts) do
       <<~FACTS
@@ -336,6 +372,35 @@ RSpec.describe "MR5 lab targets" do
       engine = Augure::Engine.new(Augure::Facts.parse(facts)).run
       expect(engine.derived("sigreturn_frame")).to eq([["true"]])
       expect(engine.derived("has_syscall_gadget")).to eq([["true"]])
+    end
+  end
+
+  describe "srop-eval (the eval twin: sigreturn pivot + sh_cmd string)" do
+    let(:facts) do
+      <<~FACTS
+        nx("true").
+        pie("false").
+        canary("false").
+        relro("partial").
+        plt("__libc_start_main").
+        plt("strcpy").
+        plt("puts").
+        plt("strlen").
+        gadget("sigreturn", 4198910).
+        gadget("ret_align", 4198921).
+        vuln("sof").
+        vuln_function("vuln_copy").
+        sink("strcpy").
+        leaked_address("gadget", 4198902).
+        leaked_address("sh_cmd", 4210760).
+      FACTS
+    end
+
+    it "proposes srop, not ret2libc" do
+      decision = decide(facts)
+      expect(decision[:applicable]).to include("srop")
+      expect(decision[:ranking].first).to eq("srop")
+      expect(rules_for(decision, "srop")).to include(:app_srop)
     end
   end
 

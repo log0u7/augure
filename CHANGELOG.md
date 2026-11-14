@@ -29,6 +29,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The profiler's gadget vocabulary grows the two gadgets the MR6 eval
+  twins need: the sigreturn pivot (`mov rax, 15; syscall` - the
+  `gadget("sigreturn")` fact that makes `fam_sigreturn_frame` +
+  `fam_syscall_from_sigreturn` fire on the real profile stream) and
+  the pop3 popper (`pop rdi; pop rsi; pop rdx; ret` - the
+  `pop_rdi_rsi_rdx_ret` fact the callme banner rule needs). Both
+  measured on the compiled callme-eval and srop-eval binaries.
+
+- The callme pack accepts the eval twins' stage names: the banner
+  rule's `leaked_address` matches now take `arm/fire/open` alongside
+  `one/two/three` - same capability class, different program (MR6
+  class transfer, never in any training dataset).
+
 - The uaf_tcache static route: when the profiler measures malloc + free
   in the PLT and no vuln("heap") fact, the technique is applicable from
   the measured facts alone - previously it required the suggest LLM's
