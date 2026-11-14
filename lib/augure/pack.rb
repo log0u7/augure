@@ -221,12 +221,29 @@ module Augure
       unless build.is_a?(Hash) && build["technique"] == @technique
         reject "build: must name its own technique (#{build.is_a?(Hash) ? build["technique"].inspect : "missing"})"
       end
-      layout = build["layout"]
-      unless layout.is_a?(Array) && !layout.empty? &&
-          layout.all? { |slot| slot.is_a?(Array) && BUILD_SLOTS.include?(slot[0]) }
+      variants = build["variants"]
+      if variants
+        reject "build: layout and variants are exclusive (one form per pack section)" if build["layout"]
+        unless valid_variants?(variants)
+          reject "build: each variant needs a unique name and a non-empty slot layout from #{BUILD_SLOTS.inspect}"
+        end
+      elsif !slot_layout?(build["layout"])
         reject "build: layout must be a non-empty array of slots from #{BUILD_SLOTS.inspect}"
       end
       @build = build
+    end
+
+    def slot_layout?(layout)
+      layout.is_a?(Array) && !layout.empty? &&
+        layout.all? { |slot| slot.is_a?(Array) && BUILD_SLOTS.include?(slot[0]) }
+    end
+
+    def valid_variants?(variants)
+      variants.is_a?(Array) && !variants.empty? &&
+        variants.all? do |v|
+          v.is_a?(Hash) && v["name"].is_a?(String) && !v["name"].empty? && slot_layout?(v["layout"])
+        end &&
+        variants.map { |v| v["name"] }.uniq.size == variants.size
     end
 
     def build_rules

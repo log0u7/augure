@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A pack's `build:` section accepts named `variants` (one `{name,
+  layout}` per binary shape of the same technique) next to the single
+  `layout` form; `layout` and `variants` are exclusive and each
+  variant needs a unique non-empty name. The armor gates the same slot
+  vocabulary per variant. The consumer (lictor's builder) walks the
+  variants and builds with the first whose references the facts
+  satisfy, so a technique can teach the mr5 PLT form and the static
+  twin's stage-function form at once. Documented in
+  `docs/build-format.md`.
+
 - The `sym_addr` fact: the profiler emits the DEFINED function and
   object symbols of a non-PIE, dynamically linked module (name and
   absolute address). The "announces NOTHING" MR6 eval twins print no

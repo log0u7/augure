@@ -11,7 +11,7 @@ def pack_yaml(overrides = {})
     "rules" => [{
       "id" => "app_ret2csu_v2",
       "head" => %w[applicable ret2csu_v2],
-      "conditions" => [["fact", "vuln", "sof"], ["match", "gadget", 0, "csu"], ["fact", "nx", "true"]]
+      "conditions" => [%w[fact vuln sof], ["match", "gadget", 0, "csu"], %w[fact nx true]]
     }],
     "kb" => [{
       "id" => "ret2csu_v2_001", "technique" => "ret2csu_v2",
@@ -52,10 +52,11 @@ RSpec.describe Augure::Pack do
 
     it "exposes an optional build: section (packs teach, the builder follows)" do
       with_build = pack_yaml("build" => {"technique" => "ret2csu_v2",
-                                         "layout" => [["padding"], ["qword", "gadget:pop_rdi_ret"], ["qword", "win"]]})
+                                         "layout" => [["padding"], ["qword", "gadget:pop_rdi_ret"],
+                                           ["qword", "win"]]})
       pack = described_class.load_hash(with_build)
       expect(pack.build["technique"]).to eq("ret2csu_v2")
-      expect(pack.build["layout"]).to include(["qword", "win"])
+      expect(pack.build["layout"]).to include(%w[qword win])
     end
 
     it "rejects a build: section that mismatches the technique or uses unknown slots (check 8)" do
@@ -67,6 +68,52 @@ RSpec.describe Augure::Pack do
       bad["build"]["layout"] = [["exec_system", "rm -rf /"]]
       expect { described_class.load_hash(bad) }
         .to raise_error(Augure::PackError, /build.*slot/)
+    end
+
+    it "accepts named layout variants: one technique, several binary shapes" do
+      with_variants = pack_yaml("build" => {
+        "technique" => "ret2csu_v2",
+        "variants" => [
+          {"name" => "plt_csu", "layout" => [["padding"], %w[qword win]]},
+          {"name" => "static_stages", "layout" => [["padding"], ["chain", "sym:vault_arm"]]}
+        ]
+      })
+      pack = described_class.load_hash(with_variants)
+      expect(pack.build["variants"].map { |v| v["name"] }).to eq(%w[plt_csu static_stages])
+    end
+
+    it "rejects malformed variants: no name, an empty layout, an unknown slot, a duplicate name" do
+      build = {"technique" => "ret2csu_v2",
+               "variants" => [{"name" => "plt_csu", "layout" => [["padding"]]}]}
+      expect { described_class.load_hash(pack_yaml("build" => build)) }.not_to raise_error
+
+      no_name = Marshal.load(Marshal.dump(build))
+      no_name["variants"][0].delete("name")
+      expect { described_class.load_hash(pack_yaml("build" => no_name)) }
+        .to raise_error(Augure::PackError, /variant/)
+
+      empty = Marshal.load(Marshal.dump(build))
+      empty["variants"][0]["layout"] = []
+      expect { described_class.load_hash(pack_yaml("build" => empty)) }
+        .to raise_error(Augure::PackError, /variant/)
+
+      unknown = Marshal.load(Marshal.dump(build))
+      unknown["variants"][0]["layout"] = [["exec_system"]]
+      expect { described_class.load_hash(pack_yaml("build" => unknown)) }
+        .to raise_error(Augure::PackError, /variant/)
+
+      duplicate = Marshal.load(Marshal.dump(build))
+      duplicate["variants"] << {"name" => "plt_csu", "layout" => [["padding"]]}
+      expect { described_class.load_hash(pack_yaml("build" => duplicate)) }
+        .to raise_error(Augure::PackError, /variant/)
+    end
+
+    it "rejects a build: that carries both layout and variants" do
+      both = {"technique" => "ret2csu_v2",
+              "layout" => [["padding"]],
+              "variants" => [{"name" => "plt_csu", "layout" => [["padding"]]}]}
+      expect { described_class.load_hash(pack_yaml("build" => both)) }
+        .to raise_error(Augure::PackError, /layout.*variants|variants.*layout/)
     end
 
     it "exposes an optional mitre: field (the ATT&CK mapping)" do
@@ -83,8 +130,10 @@ RSpec.describe Augure::Pack do
 
     it "exposes an optional detection: section (the defender side)" do
       watched = pack_yaml("detection" => [
-        {"channel" => "wire", "signature" => "cyclic pattern of >= 40 bytes", "note" => "the padding phase"},
-        {"channel" => "crash", "signature" => "SIGSEGV with a ret to an unmapped page", "note" => "the strike"}
+        {"channel" => "wire", "signature" => "cyclic pattern of >= 40 bytes",
+         "note" => "the padding phase"},
+        {"channel" => "crash", "signature" => "SIGSEGV with a ret to an unmapped page",
+         "note" => "the strike"}
       ])
       pack = described_class.load_hash(watched)
       expect(pack.detection.size).to eq(2)
@@ -109,7 +158,7 @@ RSpec.describe Augure::Pack do
 
     it "rejects cmp with a non-integer operand or an unknown operator" do
       bad = pack_yaml
-      bad["rules"][0]["conditions"][1] = ["cmp", "glibc_minor", "ge", "26"]
+      bad["rules"][0]["conditions"][1] = %w[cmp glibc_minor ge 26]
       expect { described_class.load_hash(bad) }
         .to raise_error(Augure::PackError, /cmp operand/)
       bad["rules"][0]["conditions"][1] = ["cmp", "glibc_minor", "gtr", 26]
@@ -126,21 +175,21 @@ RSpec.describe Augure::Pack do
 
     it "rejects conditions on unknown predicates" do
       bad = pack_yaml
-      bad["rules"][0]["conditions"][0] = ["fact", "invented_fact", "x"]
+      bad["rules"][0]["conditions"][0] = %w[fact invented_fact x]
       expect { described_class.load_hash(bad) }
         .to raise_error(Augure::PackError, /unknown predicate/)
     end
 
     it "rejects not_fact on derived relations (stratification)" do
       bad = pack_yaml
-      bad["rules"][0]["conditions"][0] = ["not_fact", "has_reg_control", "true"]
+      bad["rules"][0]["conditions"][0] = %w[not_fact has_reg_control true]
       expect { described_class.load_hash(bad) }
         .to raise_error(Augure::PackError, /stratification/)
     end
 
     it "rejects not_fact on derived relations even newly invented heads" do
       bad = pack_yaml
-      bad["rules"][0]["conditions"][0] = ["not_fact", "some_new_head", "true"]
+      bad["rules"][0]["conditions"][0] = %w[not_fact some_new_head true]
       expect { described_class.load_hash(bad) }
         .to raise_error(Augure::PackError, /stratification/)
     end
@@ -189,9 +238,10 @@ RSpec.describe Augure::Pack do
         "technique" => "csu_exploit",
         "rules" => [{
           "id" => "app_csu_exploit", "head" => %w[applicable csu_exploit],
-          "conditions" => [["fact", "has_csu_gadget", "true"], ["fact", "libc_present", "true"]]
+          "conditions" => [%w[fact has_csu_gadget true], %w[fact libc_present true]]
         }],
-        "mcts" => {"requires" => %w[libc_base], "provides" => %w[shell], "terminal" => true, "success" => 0.85}
+        "mcts" => {"requires" => %w[libc_base], "provides" => %w[shell],
+                   "terminal" => true, "success" => 0.85}
       ))
       first, path = Augure::Mcts.plan(%w[ret2csu_v2 csu_exploit], iterations: 1500, seed: 42,
         model: Augure::Mcts.merged_model([pack, pack2]))
@@ -205,7 +255,7 @@ RSpec.describe Augure::Pack do
       hostile = described_class.load_hash(pack_yaml(
         "technique" => "greedy_new_tech",
         "rules" => [{"id" => "app_greedy_new_tech", "head" => %w[applicable greedy_new_tech],
-                     "conditions" => [["fact", "vuln", "sof"]]}],
+                     "conditions" => [%w[fact vuln sof]]}],
         "priors" => [100, 1]
       ))
       expect { Augure::PackLoader.corpus_guard([hostile]) }

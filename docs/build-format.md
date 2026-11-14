@@ -49,7 +49,9 @@ A build layout is an ordered list of slots (data, in
 
 The `chain` refs resolve against the facts, loud `BuildError` on any
 missing piece: `gadget:TYPE`, `plt_addr:NAME`, `got_addr:NAME` (the
-profiler's address facts), `win`, `leak:NAME` (a
+profiler's address facts), `sym:NAME` (a `sym_addr(name)` fact - the
+DEFINED symbol of a non-PIE module, the announced-nothing twin's stage
+function or argument string), `win`, `leak:NAME` (a
 `leaked_address(name)` fact - the harvest, the run's leak capture),
 `const:N` (a literal - a syscall number, an offset). The built-in
 layouts cover `ret2plt` (the puts@got leak chain) and `ret2libc`
@@ -58,14 +60,23 @@ strikes through the leaked buffer address. The `ret2csu_v2` pack
 teaches its own chain (the canonical csu leak) in `build:` - packs
 teach, the builder follows.
 
+One technique can cover several binary SHAPES: `build:` accepts
+`variants` (an array of `{name, layout}`) instead of a single
+`layout`, and the builder walks them in order, the first whose refs
+the facts satisfy wins. The trail records which one built
+(`variant:`). A binary shape the facts do not support is skipped with
+its own reason; when none matches, the error names every variant and
+why it failed. `layout` and `variants` are exclusive.
+
 Under `seccomp("true")` the `sh` stub is a booby trap (execve dies):
 the builder switches the stub to the orw chain (open/read/write,
 clean exit) with the flag path embedded.
 
 The armor validates a pack's `build:` section: the technique must be
-the pack's own, the layout must be a slot list from the vocabulary
-(padding, qword, dword, shellcode, chain), the refs must name
-existing predicates. A refused layout never reaches the builder.
+the pack's own, the layout (or every variant's layout) must be a slot
+list from the vocabulary (padding, qword, dword, shellcode, chain),
+variant names are unique and non-empty, the refs must name existing
+predicates. A refused layout never reaches the builder.
 
 ## What metasm does here
 
