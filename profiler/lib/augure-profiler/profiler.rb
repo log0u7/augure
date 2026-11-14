@@ -208,7 +208,7 @@ module AugureProfiler
         name = sym.name.to_s
         next unless name.match?(/\A[a-zA-Z_][a-zA-Z0-9_]*\z/)
         next if sym.shndx.to_s == "UNDEF"
-        next unless %w[FUNC OBJECT].include?(sym.type.to_s)
+        next unless %w[FUNC OBJECT NOTYPE].include?(sym.type.to_s)
 
         facts.add("sym_addr", name, sym.value.to_i)
       end

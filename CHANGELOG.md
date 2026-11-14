@@ -39,16 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   twin's stage-function form at once. Documented in
   `docs/build-format.md`.
 
-- The `sym_addr` fact: the profiler emits the DEFINED function and
-  object symbols of a non-PIE, dynamically linked module (name and
-  absolute address). The "announces NOTHING" MR6 eval twins print no
-  banner, so their stage functions (`vault_arm`, `sigreturn_gadget`),
-  argument strings (`arg_cmd`) and buffers (`input`) have no address
-  anywhere else; the symbol table is the measured source. Two gates
-  keep the fact base honest: an ET_DYN value is module-relative (not
-  an address the runtime maps at that value, the same reason
-  `win_symbol` skips PIE), and a statically linked module's table
-  carries the whole libc, hundreds of symbols no layout targets.
+- The `sym_addr` fact: the profiler emits the DEFINED function,
+  object, and NOTYPE symbols of a non-PIE, dynamically linked module
+  (name and absolute address). The "announces NOTHING" MR6 eval twins
+  print no banner, so their stage functions (`vault_arm`, `sigreturn_gadget`,
+  hand-written `pop3_asm`), argument strings (`arg_cmd`) and buffers
+  (`input`) have no address anywhere else; the symbol table is the
+  measured source. Two gates keep the fact base honest: an ET_DYN
+  value is module-relative (not an address the runtime maps at that
+  value, the same reason `win_symbol` skips PIE), and a statically
+  linked module's table carries the whole libc, hundreds of symbols no
+  layout targets.
 
 - The profiler's gadget vocabulary grows the two gadgets the MR6 eval
   twins need: the sigreturn pivot (`mov rax, 15; syscall` - the
