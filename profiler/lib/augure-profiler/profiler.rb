@@ -24,8 +24,10 @@ module AugureProfiler
       ["pop_rdi_ret", "5f c3"],             # pop rdi ; ret
       ["pop_rsi_ret", "5e c3"],             # pop rsi ; ret
       ["pop_rsi_r15_ret", "5e 41 5f c3"],   # pop rsi ; pop r15 ; ret (the callme flavor)
+      ["pop_rdi_rsi_rdx_ret", "5f 5e 5a c3"], # pop rdi ; pop rsi ; pop rdx ; ret (the eval twin's pop3)
       ["pop_rdx_ret", "5a c3"],             # pop rdx ; ret
       ["pop_rax_ret", "58 c3"],             # pop rax ; ret
+      ["sigreturn", "48 c7 c0 0f 00 00 00 0f 05"], # mov rax, 15 ; syscall (the sigreturn pivot)
       ["JMP_STACK", "ff e4"],               # jmp esp/rsp - renamed per arch
       ["ret_align", "c3"]                   # ret
     ].freeze
