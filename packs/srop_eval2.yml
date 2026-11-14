@@ -54,7 +54,7 @@ build:
        "const:0", "const:0", "const:0",
        "sym:sh_cmd", "const:0", "const:0", "const:0", "const:0",
        "const:59", "const:0", "const:0",
-       "sym:sigreturn_gadget+7",
+       "gadget:sigreturn+7",
        "const:514", "const:51",
        "const:0", "const:0", "const:0", "const:0",
        "const:0",
