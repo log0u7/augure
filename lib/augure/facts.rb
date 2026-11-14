@@ -20,7 +20,7 @@ module Augure
       "limited_stack" => 1, "service" => 1, "software_version" => 1,
       "remote" => 1, "verified" => 1, "win_symbol" => 2,
       "crash_site" => 1, "vuln_function" => 1, "sink" => 1, "leaked_address" => 2,
-      "plt_addr" => 2, "got_addr" => 2, "cve" => 1
+      "plt_addr" => 2, "got_addr" => 2, "cve" => 1, "sym_addr" => 2
     }.freeze
 
     STRING_TYPES = {
@@ -32,6 +32,7 @@ module Augure
       "leaked_address" => %w[string integer],
       "plt_addr" => %w[string integer],
       "got_addr" => %w[string integer],
+      "sym_addr" => %w[string integer],
       "glibc_minor" => %w[integer],
       "cve" => %w[string]
     }.freeze

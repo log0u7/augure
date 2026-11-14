@@ -88,6 +88,37 @@ module ProfilerBinaryBuilder
     bin
   end
 
+  # A non-PIE binary defining a local stage function and a data string:
+  # the "announces NOTHING" twin shape, where the symbol table is the
+  # address source (sym_addr).
+  def local_symbols(dir = Dir.mktmpdir("augure_symaddr"))
+    build_symbol_holder(dir, "local_symbols", ["-no-pie"])
+  end
+
+  def local_symbols_pie(dir = Dir.mktmpdir("augure_symaddr_pie"))
+    build_symbol_holder(dir, "local_symbols_pie", ["-pie", "-fPIE"])
+  end
+
+  def local_symbols_static(dir = Dir.mktmpdir("augure_symaddr_static"))
+    build_symbol_holder(dir, "local_symbols_static", ["-static"])
+  end
+
+  def build_symbol_holder(dir, name, extra)
+    src = File.join(dir, "#{name}.c")
+    File.write(src, <<~C)
+      #include <stdio.h>
+      __attribute__((noinline, used)) void vault_arm(void) { putchar('a'); }
+      __attribute__((used)) char arg_cmd[] = "cat flag.txt";
+      int main(void) { puts(arg_cmd); vault_arm(); return 0; }
+    C
+    bin = File.join(dir, name)
+    _out, err, status = Open3.capture3("gcc", src, "-o", bin,
+      "-fno-stack-protector", "-O0", *extra)
+    raise "build failed: #{err}" unless status.success?
+
+    bin
+  end
+
   # A binary that IMPORTS a win-named function (the ret2csu shape: the
   # win lives in the companion library). The import is not a win HERE:
   # no win_symbol, no target_function.
