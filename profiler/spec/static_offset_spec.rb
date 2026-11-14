@@ -20,6 +20,14 @@ RSpec.describe AugureProfiler::StaticOffset do
     expect(described_class.offset(fixture)).not_to be_nil
   end
 
+  it "derives the fmt_offset off the frame: the buffer's argument index" do
+    # the frame math: rsp_at_call = rbp - frame, the buffer rides
+    # [rbp-disp], the first stack qword printf reads is %6
+    info = described_class.stack_format_sink(ProfilerBinaryBuilder.printf_stack)
+    expect(info[:sink]).to eq("printf")
+    expect(info[:fmt_offset]).to eq(6)
+  end
+
   it "returns nil for a binary without an unsafe import" do
     clean = File.join(Dir.mktmpdir, "clean")
     File.binwrite(clean, "\x7fELF\x02\x01\x01" + "\x00" * 64)

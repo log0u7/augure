@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The profiler emits `fmt_offset(N)` for the fmtstr class: the format
+  buffer's argument index, derived statically off the frame (`sub rsp`
+  alloc + the `lea [rbp-disp]` feeding rdi: `N = 6 + (frame - disp) / 8`,
+  x64 SysV). The exploit addresses the leak/write without a runtime
+  probe - the binary answers by itself (verified against the runtime
+  `%6$p` truth on the eval2 fmtstr twin and the printf_stack fixture).
+
 ### Fixed
 
 - Provenance survives the disk round-trip: `Facts#to_s` now serializes a

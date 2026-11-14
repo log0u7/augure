@@ -68,11 +68,14 @@ module AugureProfiler
         facts.add("sink", static[:sink]) if static[:sink]
       end
 
-      sink = StaticOffset.stack_format_sink(@path)
-      return unless sink
+      fmt = StaticOffset.stack_format_sink(@path)
+      return unless fmt
 
       facts.add("vuln", "fmtstr")
       facts.add("fmtstr_read", "true")
+      # the buffer's argument index, derived off the frame: the exploit
+      # addresses the leak/write without a runtime probe
+      facts.add("fmt_offset", fmt[:fmt_offset].to_s) if fmt[:fmt_offset]
     end
 
     # the csu byte signatures, both known compiler flavors: the popper
