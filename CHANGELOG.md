@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The `srop_eval2` pack ships: the announced-nothing SROP shape. The
+  sigreturn gadget (mov rax, 15; syscall) and the "/bin/sh" string are
+  sym_addr facts; the build lays out the full rt_sigreturn frame (uc
+  prefix, gregs in glibc enum order, fpregs 0) with rip pointing at
+  the gadget's own syscall tail (sym+7) - rax=59 fires execve there.
+  The frame was verified against the running twin (the restored
+  context spawned a shell that answered id).
+
 - The `ret2plt_eval2` pack ships: the announced-nothing ret2plt shape.
   system@plt imported (a benign call in main), the command string
   living in .data - the pack's rule keys on the `sym_addr("arg_cmd")`

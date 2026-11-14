@@ -14,7 +14,7 @@ RSpec.describe "the shipped technique packs" do
       "got_partial_overwrite", "brop", "ret2partial_overwrite", "one_gadget",
       "orw", "banner_leak", "jop", "large_bin_attack", "house_of_apple2",
       "setcontext_srop", "uaf_tcache", "ret2vdso", "got_partial_overwrite_deref",
-      "callme", "callme_eval2", "ret2plt_eval2"
+      "callme", "callme_eval2", "ret2plt_eval2", "srop_eval2"
     )
   end
 
@@ -42,7 +42,8 @@ RSpec.describe "the shipped technique packs" do
     "brop" => %{remote("true").\nverified("remote").\nnx("true").},
     "ret2partial_overwrite" => %{pie("true").\nvuln("sof").\ncanary("false").},
     "one_gadget" => %{libc_present("true").\nnx("true").},
-    "ret2plt_eval2" => %{vuln("sof").\nnx("true").\npie("false").\nplt("system").\nsym_addr("arg_cmd", 4196032).}
+    "ret2plt_eval2" => %{vuln("sof").\nnx("true").\npie("false").\nplt("system").\nsym_addr("arg_cmd", 4196032).},
+    "srop_eval2" => %{vuln("sof").\nnx("true").\npie("false").\ngadget("sigreturn", 4198846).\nsym_addr("sh_cmd", 4210744).}
   }.each do |technique, facts|
     it "makes #{technique} applicable on its fact shape" do
       decision = Augure::Pipeline.analyze(facts: facts, packs: packs, plan: false)

