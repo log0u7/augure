@@ -30,6 +30,16 @@ RSpec.describe "the shipped technique packs" do
     expect(decision[:ranking].first).to eq("callme_eval2")
   end
 
+  it "teaches the orw ROP variant: openat/read/write off the facts" do
+    # the harder twin's filter allows openat(257) only; the chain aims
+    # the .data anchors (flag_path, out_buf) with the pop/syscall set
+    build = packs.find { |p| p.technique == "orw" }.build
+    expect(build["variants"].map { |v| v["name"] }).to eq(%w[rop stack])
+    rop = build["variants"].first["layout"].flatten
+    expect(rop).to include("const:257", "gadget:syscall_ret",
+      "gadget:pop_rax_ret", "sym:flag_path", "sym:out_buf")
+  end
+
   it "passes the corpus guard: no frozen verdict moves" do
     expect { Augure::PackLoader.corpus_guard(packs) }.not_to raise_error
   end

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The `orw` pack teaches the build: two variants, walked in order. The
+  ROP path (nx on) chains openat(257)/read/write through the pop and
+  syscall gadgets the profiler carries, aiming the binary's own .data
+  anchors (`flag_path`, `out_buf`) - the filter's openat-only
+  discipline is the chain's first syscall, AT_FDCWD rides as its
+  unsigned qword. The stack path (nx off) keeps the executable-stack
+  stub with the harvest leak. Verified against the eval2 twin: the
+  chain prints the flag.
+
 - The `srop_eval2` pack ships: the announced-nothing SROP shape. The
   sigreturn gadget (mov rax, 15; syscall) and the "/bin/sh" string are
   sym_addr facts; the build lays out the full rt_sigreturn frame (uc
