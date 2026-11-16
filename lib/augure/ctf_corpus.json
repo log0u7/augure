@@ -665,6 +665,78 @@
         ],
         "selected": "heap_overwrite"
       }
+    ],
+    "lab": [
+      {
+        "suite": "lab",
+        "name": "brop",
+        "facts": "nx(\"true\").\nremote(\"true\").\nverified(\"remote\").\n",
+        "applicable": [],
+        "ranked": [],
+        "selected": null,
+        "truth": "brop",
+        "pack_verdict": "brop"
+      },
+      {
+        "suite": "lab",
+        "name": "one_gadget",
+        "facts": "nx(\"true\").\nlibc_present(\"true\").\n",
+        "applicable": [],
+        "ranked": [],
+        "selected": null,
+        "truth": "one_gadget",
+        "pack_verdict": "one_gadget"
+      },
+      {
+        "suite": "lab",
+        "name": "got_partial_overwrite",
+        "facts": "nx(\"true\").\nrelro(\"partial\").\ngot_overwrite_target(\"true\").\n",
+        "applicable": [],
+        "ranked": [],
+        "selected": null,
+        "truth": "got_partial_overwrite",
+        "pack_verdict": "got_partial_overwrite"
+      },
+      {
+        "suite": "lab",
+        "name": "ret2partial_overwrite",
+        "facts": "nx(\"true\").\npie(\"true\").\ncanary(\"false\").\nvuln(\"sof\").\n",
+        "applicable": [],
+        "ranked": [],
+        "selected": null,
+        "truth": "ret2partial_overwrite",
+        "pack_verdict": "ret2partial_overwrite"
+      },
+      {
+        "suite": "lab",
+        "name": "jop",
+        "facts": "nx(\"true\").\npie(\"false\").\ncanary(\"false\").\nvuln(\"sof\").\ngadget(\"pop_rdi_ret\", 4198806).\ngadget(\"xchg_rsp_rax\", 4198966).\n",
+        "applicable": [],
+        "ranked": [],
+        "selected": null,
+        "truth": "jop",
+        "pack_verdict": "jop"
+      },
+      {
+        "suite": "lab",
+        "name": "ret2vdso",
+        "facts": "nx(\"true\").\npie(\"true\").\nrelro(\"full\").\nplt(\"puts\").\nvuln(\"sof\").\n",
+        "applicable": [],
+        "ranked": [],
+        "selected": null,
+        "truth": "ret2vdso",
+        "pack_verdict": "ret2vdso"
+      },
+      {
+        "suite": "lab",
+        "name": "setcontext_srop",
+        "facts": "nx(\"true\").\ngadget(\"syscall\", 4198810).\nsigreturn_frame(\"true\").\nlibc_present(\"true\").\n",
+        "applicable": [],
+        "ranked": [],
+        "selected": null,
+        "truth": "setcontext_srop",
+        "pack_verdict": "setcontext_srop"
+      }
     ]
   },
   "mcts": [
