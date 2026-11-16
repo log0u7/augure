@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The MR7 lab suite in the corpus: seven entries (brop, one_gadget,
+  got_partial_overwrite, ret2partial_overwrite, jop, ret2vdso,
+  setcontext_srop), each with a pack_verdict - with the packs loaded,
+  the documented pack technique ranks first on its own target
+  (enforced by the corpus guard at every pack load). The fact bases
+  carry only the facts the decision may consume at strike time; the
+  brop entry models the blind class (remote/verified only, no binary).
+
+- Build layouts for the seven technique packs. The brop and one_gadget
+  packs ship leak_stage/strike variants (the strike derives its
+  targets from the leak at runtime); got_partial_overwrite rides the
+  fmtstr recon round; ret2partial_overwrite uses the word slot (the
+  2-byte page hop); jop pivots onto the .bss fake stack through the
+  xchg rsp/rax gadget; ret2vdso ships the pop3 leak stage and the
+  execve strike; setcontext_srop lays out the full rt_sigreturn frame
+  with rip = the libc system symbol and rsp on the .bss staging.
+
+- Static-pie profiling: the embedded-libc twins (no PLT stubs) get
+  their overflow read off the defined read/memcpy symbols, the canary
+  fact is decided by the vuln function's own code (the TLS canary
+  read) instead of the unused `__stack_chk_fail` symbol a static
+  binary always carries, and sym_addr facts ride for static DYN
+  modules (module-relative: the low bits are load-base stable, which
+  is what the partial-overwrite word slot consumes).
+
+### Fixed
+
+- The fuzzer clamps RLIMIT_CORE on every spawn: a piped
+  systemd-coredump pattern ignores a 0 limit and cost ~0.5s per crash,
+  turning every crash sweep into minutes.
+
+- The `word` slot joins the pack build vocabulary
+  (`BUILD_SLOTS`): the partial-overwrite layouts validate.
+
 - The `orw` pack teaches the build: two variants, walked in order. The
   ROP path (nx on) chains openat(257)/read/write through the pop and
   syscall gadgets the profiler carries, aiming the binary's own .data
