@@ -34,6 +34,18 @@ mcts:
   terminal: true
   success: 0.40
 
+build:
+  technique: ret2partial_overwrite
+  # the no-leak fallback: PIE randomizes pages, not the low 12 bits.
+  # The word slot overwrites ONLY the saved return address's low two
+  # bytes - the high six bytes of the slot keep the original bytes
+  # (the base's high bits). The exploit probes the page hop: up to
+  # 16 tries on the 4 random bits (the sym_addr fact carries the
+  # candidate's page bits), one connection per try.
+  layout:
+    - [padding, measured_offset]
+    - [word, "sym:win"]
+
 priors: [8, 12]
 
 

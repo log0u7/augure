@@ -47,6 +47,7 @@ module AugureProfiler
     def facts
       facts = Augure::Facts.new
       emit_checksec(facts)
+      @static = StaticOffset.offset(@path)
       emit_symbols(facts)
       emit_gadgets(facts)
       emit_vuln_facts(facts)
@@ -61,7 +62,7 @@ module AugureProfiler
     # is not a bounded immediate. The fmtstr class: the printf-family
     # format argument living on the stack.
     def emit_vuln_facts(facts)
-      static = StaticOffset.offset(@path)
+      static = @static
       if static
         facts.add("vuln", "sof")
         facts.add("vuln_function", static[:function]) if static[:function] && !static[:function].empty?
@@ -166,10 +167,43 @@ module AugureProfiler
         facts.add("win_symbol", sym.name, sym.value.to_i)
       end
       if names.include?("__stack_chk_fail")
-        facts.add("canary", "true")
+        # The static-pie trap: the embedded libc carries __stack_chk_fail
+        # as a DEFINED symbol even when the stack protector is off - the
+        # name check lies. The import is decisive; a defined symbol only
+        # counts when the vuln function's own code reads the TLS canary
+        # (fs:0x28 on x64, gs:0x14 on x86).
+        imported = @elf.symbols.any? { |s| s.name == "__stack_chk_fail" && s.shndx.to_s == "UNDEF" }
+        facts.add("canary", (imported || vuln_checks_canary?) ? "true" : "false")
       else
         facts.add("canary", "false")
       end
+    end
+
+    # The canary read in the vuln function's prologue: the TLS segment
+    # read with the canary offset. Nothing in the function's code =
+    # no canary, whatever the symbol table carries.
+    CANARY_PATTERNS = [
+      [0x64, 0x48, 0x8b, 0x04, 0x25, 0x28, 0x00, 0x00, 0x00], # mov %fs:0x28,%rax
+      [0x65, 0xa1, 0x14, 0x00, 0x00, 0x00],                   # mov %gs:0x14,%eax
+      [0x65, 0x8b, 0x05, 0x14, 0x00, 0x00, 0x00]              # mov %gs:0x14,%eax (alt)
+    ].freeze
+
+    def vuln_checks_canary?
+      fn = @static && @static[:function]
+      return true unless fn # no function knowledge: keep the name heuristic (conservative)
+
+      sym = @elf.symbols.find { |s| s.name == fn && s.value.to_i > 0 }
+      return true unless sym # unresolvable: conservative
+
+      text = @elf.sections.find { |s| s.name.to_s == ".text" }
+      return true unless text && sym.value.to_i >= text.addr.to_i
+
+      data = StaticOffset.section_data(@path, text)
+      start = sym.value.to_i - text.addr.to_i
+      nxt = @elf.symbols.map(&:value).map(&:to_i).select { |v| v > sym.value.to_i }.min
+      stop = nxt ? (nxt - text.addr.to_i) : data.bytesize
+      slice = data.bytes[start...stop].pack("C*")
+      CANARY_PATTERNS.any? { |p| slice.index(p.pack("C*")) }
     end
 
     # The addresses a ROP chain resolves against: the JMP_SLOT
@@ -204,8 +238,14 @@ module AugureProfiler
     # carries the whole libc (hundreds of symbols) where no layout
     # targets a name - the dynamic twins are the shape this serves.
     def emit_sym_addresses(facts)
-      return unless @elf.header.type.to_s == "EXEC"
-      return unless @elf.segments.any? { |s| s.type.to_s == "INTERP" }
+      # EXEC+INTERP: the addresses are absolute (no PIE). A static DYN
+      # module (static-pie: no INTERP, the libc embedded) carries
+      # module-relative addresses - the low bits are load-base stable,
+      # which is exactly what the partial-overwrite word slot consumes.
+      exec_interp = @elf.header.type.to_s == "EXEC"
+      static_pie = @elf.header.type.to_s == "DYN" &&
+        !@elf.segments.any? { |s| s.type.to_s == "INTERP" }
+      return unless exec_interp || static_pie
 
       @elf.symbols.each do |sym|
         name = sym.name.to_s

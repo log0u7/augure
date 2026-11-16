@@ -177,7 +177,7 @@ module Augure
     # BUILDER its assembly order) must name its own technique and use
     # the slot vocabulary only. The consumer (lictor's PayloadBuilder)
     # interprets the slots; here we gate the vocabulary.
-    BUILD_SLOTS = %w[padding qword dword shellcode chain].freeze
+    BUILD_SLOTS = %w[padding qword dword word shellcode chain fmtstr_leak].freeze
 
     # armor check 9: the optional detection: section - the DEFENDER
     # side of the technique (the corpus read backwards). Constrained

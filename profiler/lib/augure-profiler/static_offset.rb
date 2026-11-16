@@ -42,6 +42,14 @@ module AugureProfiler
       @path = path
       stubs = plt_stubs(elf, arch)
       unsafe = stubs.slice(*calls)
+      if unsafe.empty?
+        # static-pie: the libc is embedded, no PLT stubs exist and the
+        # unsafe calls go straight to the DEFINED symbols - the call
+        # sites still resolve by address, only the source table changes
+        unsafe = elf.symbols
+          .select { |s| calls.include?(s.name.to_s) && s.shndx.to_s != "UNDEF" && s.value.to_i > 0 }
+          .map { |s| [s.name.to_s, s.value.to_i] }.to_h
+      end
       return nil if unsafe.empty?
 
       @unsafe_addrs = unsafe.invert

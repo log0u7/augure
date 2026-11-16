@@ -81,7 +81,10 @@ module AugureProfiler
       end
 
       (sweep + random).filter_map do |input|
-        _out, _err, status = Open3.capture3(binary, stdin_data: input)
+        # rlimit_core 1: a piped systemd-coredump pattern ignores a 0
+        # limit and costs ~0.5s per crash, which turned every sweep
+        # into minutes. One block still skips the helper.
+        _out, _err, status = Open3.capture3(binary, stdin_data: input, rlimit_core: 1)
         {input: input} if status.signaled? && CRASH_SIGNALS.include?(status.termsig)
       end
     end
@@ -190,9 +193,7 @@ module AugureProfiler
       return "" unless report[:signal] == "SIGSEGV"
 
       facts = ["vuln(\"sof\").\n"]
-      if report[:control]
-        facts << "return_addr_filtered(\"false\").\n"
-      end
+      facts << "return_addr_filtered(\"false\").\n" if report[:control]
       facts.join
     end
 

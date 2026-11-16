@@ -109,6 +109,42 @@ RSpec.describe AugureProfiler::Profiler do
     end
   end
 
+  describe "the static-pie twins (the lab's ret2partial_overwrite shape)" do
+    let(:spie) { File.join(dir, "static_pie_nocanary") }
+    let(:spie_canary) { File.join(dir, "static_pie_canary") }
+    before { BinaryBuilder.static_pie(dir) }
+
+    it "finds the sof overflow in the embedded-libc twin (no PLT stubs)" do
+      facts = described_class.new(spie).facts
+      expect(facts.rel("vuln")).to include(["sof"])
+      expect(facts.rel("vuln_function")).to eq([["vuln"]])
+      expect(facts.rel("sink")).to eq([["read"]])
+    end
+
+    it "does NOT claim a canary the unused __stack_chk_fail symbol implies" do
+      # a static-pie binary embeds libc wholesale: __stack_chk_fail is
+      # a DEFINED symbol even when the stack protector is off - the
+      # name check lies, the vuln function's code is the evidence
+      facts = described_class.new(spie).facts
+      expect(facts.rel("canary")).to eq([["false"]])
+    end
+
+    it "keeps the canary fact true on the protected twin" do
+      facts = described_class.new(spie_canary).facts
+      expect(facts.rel("canary")).to eq([["true"]])
+    end
+
+    it "emits sym_addr facts for the static-pie twin (module-relative: the pie fact says so)" do
+      # the partial-overwrite word slot consumes the LOW 16 bits of the
+      # win symbol: the load base is page-aligned, the low bits never
+      # move. The EXEC-only guard used to hide the whole symbol table.
+      facts = described_class.new(spie).facts
+      win = facts.rel("sym_addr")&.find { |(name, _addr)| name == "win" }
+      expect(win).to be_a(Array)
+      expect(win[1]).to be_a(Integer).and be_positive
+    end
+  end
+
   describe "the facts contract" do
     it "produces facts the augure engine parses without error" do
       facts = described_class.new(vuln).facts

