@@ -69,6 +69,32 @@ module BinaryBuilder
     out
   end
 
+  # The static-pie twins (the lab's ret2partial_overwrite shape): the
+  # libc is EMBEDDED (no PLT stubs, the unsafe calls go straight to
+  # the defined symbols) and the canary symbol rides along unused
+  # when the stack protector is off. The vulnerable twin: read into a
+  # 64-byte stack buffer with a 256-byte count.
+  def static_pie(dir = Dir.mktmpdir("augure_static_pie"))
+    src = File.join(dir, "static_pie.c")
+    File.write(src, <<~C)
+      #include <unistd.h>
+      #include <fcntl.h>
+      __attribute__((noinline)) void win(void) {
+          int fd = open("/dev/null", O_RDONLY);
+          if (fd >= 0) close(fd);
+          _exit(0);
+      }
+      __attribute__((noinline)) int vuln(void) {
+          char buf[64];
+          return (int) read(0, buf, 256);
+      }
+      int main(void) { vuln(); return 0; }
+    C
+    gcc(dir, src, "static_pie_nocanary", "-fno-stack-protector", "-static-pie", "-O0")
+    gcc(dir, src, "static_pie_canary", "-fstack-protector-strong", "-static-pie", "-O0")
+    dir
+  end
+
   def local_system(dir = Dir.mktmpdir("augure_local"))
     # a binary whose ONLY interesting symbol is a LOCAL function named
     # exactly `system`: the ret2plt trap - if the profiler emits
