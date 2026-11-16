@@ -28,6 +28,17 @@ mcts:
   terminal: true
   success: 0.35
 
+build:
+  technique: jop
+  # the register seed: the vuln's return value (the seed qword) lands
+  # in rax, the pivot gadget `xchg rsp, rax; ret` consumes it. The
+  # staging read seeds the fake stack in .bss first (the exploit's
+  # job - the staging read is a separate channel), then the chain
+  # lands the pivot on the return slot and the seed qword behind it.
+  layout:
+    - [padding, measured_offset]
+    - [chain, "gadget:xchg_rsp_rax", "sym:dispatcher_target+4096"]
+
 priors: [6, 14]
 
 

@@ -27,6 +27,18 @@ mcts:
   terminal: true
   success: 0.50
 
+build:
+  technique: got_partial_overwrite
+  # the fmtstr class: the format string IS the payload. The recon
+  # round: printf leaks the stack qwords from the buffer's own
+  # argument index (the fmt_offset fact). The strike derives its
+  # targets from what answers (the exploit's job, not a static byte
+  # layout).
+  variants:
+    - name: recon_round
+      layout:
+        - [fmtstr_leak, fmt_offset]
+
 priors: [8, 12]
 
 
